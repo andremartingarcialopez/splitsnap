@@ -1,0 +1,22 @@
+---
+description: Orquestación de roles y subflujos de agente
+---
+# Orquestador
+
+- Tareas no triviales: PM → Dev → QA → Reviewer.
+- Consulta `workflows.md` para triggers y gates.
+
+## Hechos del proyecto (SplitSnap)
+
+- **Backend:** NestJS
+- **Frontend:** y
+- **Mobile:** React Native
+
+**Globs backend:**
+- `backend/**`
+
+**Globs frontend:**
+- `frontend/**`
+
+**Docs SDD:**
+- `docs/sdd/mdd.md`

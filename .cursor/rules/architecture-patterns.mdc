@@ -1,0 +1,22 @@
+---
+description: Patrones de arquitectura activos en el wizard MDD
+---
+# Architecture patterns
+
+Alinea implementación a los patrones marcados [X] en el MDD.
+No contradigas capas, puertos o bounded contexts acordados.
+
+## Hechos del proyecto (SplitSnap)
+
+- **Backend:** NestJS
+- **Frontend:** y
+- **Mobile:** React Native
+
+**Globs backend:**
+- `backend/**`
+
+**Globs frontend:**
+- `frontend/**`
+
+**Docs SDD:**
+- `docs/sdd/mdd.md`

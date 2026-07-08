@@ -1,0 +1,24 @@
+---
+description: Convenciones de commits (Conventional Commits cuando aplique)
+alwaysApply: true
+---
+# Git commits
+
+- Mensajes imperativos y acotados.
+- No incluir co-autores de agentes IA salvo petición explícita.
+- No force-push a main/master sin autorización.
+
+## Hechos del proyecto (SplitSnap)
+
+- **Backend:** NestJS
+- **Frontend:** y
+- **Mobile:** React Native
+
+**Globs backend:**
+- `backend/**`
+
+**Globs frontend:**
+- `frontend/**`
+
+**Docs SDD:**
+- `docs/sdd/mdd.md`

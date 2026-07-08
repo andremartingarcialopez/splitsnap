@@ -1,0 +1,36 @@
+---
+description: Sincronizar la documentación SDD con el código vía MCP The Forge (drift greenfield / pre-producción)
+alwaysApply: true
+---
+
+# The Forge doc sync
+
+El código es la fuente de verdad; el SDD (MDD, Blueprint, Tasks, contratos, flujos…) debe reflejarlo. En greenfield pre-producción los cambios por faltantes de documentación o funcionalidad nueva se reconcilian con **`report_documentation_gap`**, **no** abriendo una etapa nueva por cada desvío.
+
+## Cuándo reportar
+
+- **Inline:** durante la implementación descubres que un entregable SDD es **incorrecto o incompleto**.
+- **Fin de sesión / pre-commit:** antes de cerrar la tarea o commitear, revisa el `git diff` contra el SDD; si el código introdujo/renombró/eliminó algo no contemplado (endpoint, entidad, flujo, tarea), repórtalo.
+
+## Cómo
+
+1. **No** parches la doc en silencio ni abras una etapa nueva por esto.
+2. Lee `.theforge-project.json` (`projectId`, `stageId`).
+3. Llama MCP `report_documentation_gap`: `description` ≥40 chars, `evidence.reference` (§, T-, `docs/sdd/`, `specs/001-splitsnap/tasks.md`), `affectedArtifacts` acotados. El **MDD se parchea siempre**.
+4. Continúa con el código correcto; la reconciliación parcial se aplica sola (o queda `PENDING_APPROVAL` en Workshop).
+5. Detalle, pasos del diff y mapeo cambio→artefactos: skill `theforge-doc-sync`.
+
+## Hechos del proyecto (SplitSnap)
+
+- **Backend:** NestJS
+- **Frontend:** y
+- **Mobile:** React Native
+
+**Globs backend:**
+- `apps/api/**`
+
+**Globs frontend:**
+- `apps/web/**`
+
+**Docs SDD:**
+- `docs/sdd/mdd.md`

@@ -1,0 +1,22 @@
+---
+description: Contratos API alineados al MDD §4
+---
+# API contracts
+
+- Cambios de contrato: actualizar spec/OpenAPI y tests.
+- Validación de entrada según stack (Zod, class-validator, etc.).
+
+## Hechos del proyecto (SplitSnap)
+
+- **Backend:** NestJS
+- **Frontend:** y
+- **Mobile:** React Native
+
+**Globs backend:**
+- `apps/api/**`
+
+**Globs frontend:**
+- `apps/web/**`
+
+**Docs SDD:**
+- `docs/sdd/mdd.md`

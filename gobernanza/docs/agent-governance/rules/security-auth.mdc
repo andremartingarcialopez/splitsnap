@@ -1,0 +1,22 @@
+---
+description: Seguridad y auth según MDD §6
+---
+# Security & auth
+
+- No commitear secretos ni `.env` con credenciales.
+- Respeta flujos JWT/OAuth/MFA descritos en el MDD.
+
+## Hechos del proyecto (SplitSnap)
+
+- **Backend:** NestJS
+- **Frontend:** y
+- **Mobile:** React Native
+
+**Globs backend:**
+- `apps/api/**`
+
+**Globs frontend:**
+- `apps/web/**`
+
+**Docs SDD:**
+- `docs/sdd/mdd.md`

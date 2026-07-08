@@ -1,0 +1,264 @@
+{
+  "templateVersion": "2.0.0",
+  "files": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "docs/agent-governance/agent-onboarding.md",
+    "docs/agent-governance/agents/backend-implementer.md",
+    "docs/agent-governance/agents/frontend-implementer.md",
+    "docs/agent-governance/agents/mobile-implementer.md",
+    "docs/agent-governance/commands/implementar-tarea.md",
+    "docs/agent-governance/commands/revisar-api.md",
+    "docs/agent-governance/COMO-USAR-GOBERNANZA-IA.md",
+    "docs/agent-governance/INSTALACION.md",
+    "docs/agent-governance/mcp.json.example",
+    "docs/agent-governance/references/AGENT-PROMPT.md",
+    "docs/agent-governance/references/CURSOR_SKILLS_Y_RULES.md",
+    "docs/agent-governance/references/PROMPT_HANDOFF_AGENTE.md",
+    "docs/agent-governance/references/THEFORGE-DOC-CONSUMPTION-GUIDE.md",
+    "docs/agent-governance/references/THEFORGE-LINK.md",
+    "docs/agent-governance/references/workflows.md",
+    "docs/agent-governance/rules/api-contracts.mdc",
+    "docs/agent-governance/rules/architecture-patterns.mdc",
+    "docs/agent-governance/rules/git-commits.mdc",
+    "docs/agent-governance/rules/orchestrator.mdc",
+    "docs/agent-governance/rules/security-auth.mdc",
+    "docs/agent-governance/rules/stack-backend.mdc",
+    "docs/agent-governance/rules/stack-frontend.mdc",
+    "docs/agent-governance/rules/theforge-doc-sync.mdc",
+    "docs/agent-governance/rules/ui-pantallas.mdc",
+    "docs/agent-governance/skills/deploy-docker/SKILL.md",
+    "docs/agent-governance/skills/design-system-ui/SKILL.md",
+    "docs/agent-governance/skills/monorepo-packages/SKILL.md",
+    "docs/agent-governance/skills/project-package/SKILL.md",
+    "docs/agent-governance/skills/theforge-doc-sync/SKILL.md",
+    "docs/agent-governance/skills/ui-pantallas/SKILL.md",
+    "docs/agent-governance/skills/web/SKILL.md",
+    "docs/sdd/api-contracts.md",
+    "docs/sdd/architecture.md",
+    "docs/sdd/blueprint.md",
+    "docs/sdd/infra.md",
+    "docs/sdd/logic-flows.md",
+    "docs/sdd/mdd.md",
+    "docs/sdd/pantallas.md",
+    "docs/sdd/PROGRESO.md",
+    "docs/sdd/spec.md",
+    "docs/sdd/tasks.md",
+    "docs/sdd/use-cases.md",
+    "docs/sdd/user-stories.md",
+    "docs/sdd/ux-ui-guide.md",
+    "IMPLEMENT.md",
+    "PROMPT-INICIAL.md",
+    "scripts/install-agent-governance.sh",
+    "THEFORGE-DOC-CONSUMPTION-GUIDE.md"
+  ],
+  "generatedAt": "2026-07-07T23:37:53.527Z",
+  "suggestions": {
+    "archetypes": [
+      "auth-jwt",
+      "mcp-enabled"
+    ],
+    "rationale": [
+      "Arquetipos detectados: auth-jwt, mcp-enabled.",
+      "Stack (MDD §2): NestJS, y, React Native.",
+      "Rule `git-commits`: Convenciones de commits y git safety (señal fuerte, min LOW).",
+      "Rule `stack-backend`: Stack backend: lint, typecheck, tests y convenciones (señal fuerte, min LOW).",
+      "Rule `stack-frontend`: Stack frontend: componentes, tokens y gates (señal fuerte, min LOW).",
+      "Rule `ui-pantallas`: Pantallas MCP: componentes reales, entidades y binding por vista (señal moderada, min LOW).",
+      "Rule `api-contracts`: Contratos API, validación y OpenAPI (señal moderada, min MEDIUM).",
+      "Rule `orchestrator`: Roles PM → Dev → QA → Reviewer y subflujos (señal moderada, min MEDIUM).",
+      "Rule `security-auth`: Autenticación, autorización y secretos (señal fuerte, min MEDIUM).",
+      "Rule `architecture-patterns`: Patrones wizard: Hexagonal, CQRS, DDD, etc. (señal moderada, min MEDIUM).",
+      "Rule `mcp-governance`: Uso de servidores MCP declarados en §1 (señal fuerte, min MEDIUM).",
+      "Skill `domain-package`: Skill de dominio del paquete o módulo principal (señal fuerte).",
+      "Skill `ui-pantallas`: Implementar vistas según Pantallas / UI Screens Spec (MCP gráfico) (señal moderada).",
+      "Conflictos SDD detectados: 2 (ver AGENTS.md / AGENT-PROMPT)."
+    ],
+    "entries": [
+      {
+        "id": "git-commits",
+        "path": "docs/agent-governance/rules/git-commits.mdc",
+        "kind": "rule",
+        "purpose": "Convenciones de commits y git safety",
+        "strength": "strong"
+      },
+      {
+        "id": "stack-backend",
+        "path": "docs/agent-governance/rules/stack-backend.mdc",
+        "kind": "rule",
+        "purpose": "Stack backend: lint, typecheck, tests y convenciones",
+        "strength": "strong"
+      },
+      {
+        "id": "stack-frontend",
+        "path": "docs/agent-governance/rules/stack-frontend.mdc",
+        "kind": "rule",
+        "purpose": "Stack frontend: componentes, tokens y gates",
+        "strength": "strong"
+      },
+      {
+        "id": "ui-pantallas",
+        "path": "docs/agent-governance/rules/ui-pantallas.mdc",
+        "kind": "rule",
+        "purpose": "Pantallas MCP: componentes reales, entidades y binding por vista",
+        "strength": "weak"
+      },
+      {
+        "id": "api-contracts",
+        "path": "docs/agent-governance/rules/api-contracts.mdc",
+        "kind": "rule",
+        "purpose": "Contratos API, validación y OpenAPI",
+        "strength": "weak"
+      },
+      {
+        "id": "orchestrator",
+        "path": "docs/agent-governance/rules/orchestrator.mdc",
+        "kind": "rule",
+        "purpose": "Roles PM → Dev → QA → Reviewer y subflujos",
+        "strength": "weak"
+      },
+      {
+        "id": "security-auth",
+        "path": "docs/agent-governance/rules/security-auth.mdc",
+        "kind": "rule",
+        "purpose": "Autenticación, autorización y secretos",
+        "strength": "strong"
+      },
+      {
+        "id": "architecture-patterns",
+        "path": "docs/agent-governance/rules/architecture-patterns.mdc",
+        "kind": "rule",
+        "purpose": "Patrones wizard: Hexagonal, CQRS, DDD, etc.",
+        "strength": "weak"
+      },
+      {
+        "id": "domain-package",
+        "path": "docs/agent-governance/skills/project-package/SKILL.md",
+        "kind": "skill",
+        "purpose": "Skill de dominio del paquete o módulo principal",
+        "strength": "strong"
+      },
+      {
+        "id": "ui-pantallas",
+        "path": "docs/agent-governance/skills/ui-pantallas/SKILL.md",
+        "kind": "skill",
+        "purpose": "Implementar vistas según Pantallas / UI Screens Spec (MCP gráfico)",
+        "strength": "weak"
+      }
+    ]
+  },
+  "installMap": [
+    {
+      "source": "docs/agent-governance/agents/backend-implementer.md",
+      "target": ".cursor/agents/backend-implementer.md"
+    },
+    {
+      "source": "docs/agent-governance/agents/frontend-implementer.md",
+      "target": ".cursor/agents/frontend-implementer.md"
+    },
+    {
+      "source": "docs/agent-governance/agents/mobile-implementer.md",
+      "target": ".cursor/agents/mobile-implementer.md"
+    },
+    {
+      "source": "docs/agent-governance/commands/implementar-tarea.md",
+      "target": ".cursor/commands/implementar-tarea.md"
+    },
+    {
+      "source": "docs/agent-governance/commands/revisar-api.md",
+      "target": ".cursor/commands/revisar-api.md"
+    },
+    {
+      "source": "docs/agent-governance/mcp.json.example",
+      "target": ".cursor/mcp.json"
+    },
+    {
+      "source": "docs/agent-governance/references/AGENT-PROMPT.md",
+      "target": ".cursor/references/AGENT-PROMPT.md"
+    },
+    {
+      "source": "docs/agent-governance/references/CURSOR_SKILLS_Y_RULES.md",
+      "target": ".cursor/references/CURSOR_SKILLS_Y_RULES.md"
+    },
+    {
+      "source": "docs/agent-governance/references/PROMPT_HANDOFF_AGENTE.md",
+      "target": ".cursor/references/PROMPT_HANDOFF_AGENTE.md"
+    },
+    {
+      "source": "docs/agent-governance/references/THEFORGE-DOC-CONSUMPTION-GUIDE.md",
+      "target": ".cursor/references/THEFORGE-DOC-CONSUMPTION-GUIDE.md"
+    },
+    {
+      "source": "docs/agent-governance/references/THEFORGE-LINK.md",
+      "target": ".cursor/references/THEFORGE-LINK.md"
+    },
+    {
+      "source": "docs/agent-governance/references/workflows.md",
+      "target": ".cursor/references/workflows.md"
+    },
+    {
+      "source": "docs/agent-governance/rules/api-contracts.mdc",
+      "target": ".cursor/rules/api-contracts.mdc"
+    },
+    {
+      "source": "docs/agent-governance/rules/architecture-patterns.mdc",
+      "target": ".cursor/rules/architecture-patterns.mdc"
+    },
+    {
+      "source": "docs/agent-governance/rules/git-commits.mdc",
+      "target": ".cursor/rules/git-commits.mdc"
+    },
+    {
+      "source": "docs/agent-governance/rules/orchestrator.mdc",
+      "target": ".cursor/rules/orchestrator.mdc"
+    },
+    {
+      "source": "docs/agent-governance/rules/security-auth.mdc",
+      "target": ".cursor/rules/security-auth.mdc"
+    },
+    {
+      "source": "docs/agent-governance/rules/stack-backend.mdc",
+      "target": ".cursor/rules/stack-backend.mdc"
+    },
+    {
+      "source": "docs/agent-governance/rules/stack-frontend.mdc",
+      "target": ".cursor/rules/stack-frontend.mdc"
+    },
+    {
+      "source": "docs/agent-governance/rules/theforge-doc-sync.mdc",
+      "target": ".cursor/rules/theforge-doc-sync.mdc"
+    },
+    {
+      "source": "docs/agent-governance/rules/ui-pantallas.mdc",
+      "target": ".cursor/rules/ui-pantallas.mdc"
+    },
+    {
+      "source": "docs/agent-governance/skills/deploy-docker/SKILL.md",
+      "target": ".cursor/skills/deploy-docker/SKILL.md"
+    },
+    {
+      "source": "docs/agent-governance/skills/design-system-ui/SKILL.md",
+      "target": ".cursor/skills/design-system-ui/SKILL.md"
+    },
+    {
+      "source": "docs/agent-governance/skills/monorepo-packages/SKILL.md",
+      "target": ".cursor/skills/monorepo-packages/SKILL.md"
+    },
+    {
+      "source": "docs/agent-governance/skills/project-package/SKILL.md",
+      "target": ".cursor/skills/project-package/SKILL.md"
+    },
+    {
+      "source": "docs/agent-governance/skills/theforge-doc-sync/SKILL.md",
+      "target": ".cursor/skills/theforge-doc-sync/SKILL.md"
+    },
+    {
+      "source": "docs/agent-governance/skills/ui-pantallas/SKILL.md",
+      "target": ".cursor/skills/ui-pantallas/SKILL.md"
+    },
+    {
+      "source": "docs/agent-governance/skills/web/SKILL.md",
+      "target": ".cursor/skills/web/SKILL.md"
+    }
+  ]
+}

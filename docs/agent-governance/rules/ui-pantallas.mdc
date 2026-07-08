@@ -1,0 +1,33 @@
+---
+description: Pantallas / UI MCP — spec de vistas
+globs: ["apps/web/**"]
+---
+# Pantallas (UI MCP)
+
+## Cuándo aplicar
+
+- Antes de implementar **cualquier** pantalla o ruta de UI.
+- Lee `specs/NNN-slug/pantallas.md` (primario) o espejo `docs/sdd/pantallas.md`.
+
+## Reglas
+
+- Usa **solo** los componentes listados (nombre + paquete@versión); no sustituyas por genéricos sin justificar en MDD.
+- Respeta la tabla **Props / Binding** (endpoints, entidades).
+- Una fila del doc ≈ una vista o flujo; no mezcles pantallas.
+- Si **no** hay `pantallas.md`, usa Blueprint §8 + `design-system.md`; no inventes componentes MCP.
+- Ante conflicto con Blueprint §8 heurístico, **gana pantallas.md** cuando exista.
+
+## Hechos del proyecto (SplitSnap)
+
+- **Backend:** NestJS
+- **Frontend:** y
+- **Mobile:** React Native
+
+**Globs backend:**
+- `apps/api/**`
+
+**Globs frontend:**
+- `apps/web/**`
+
+**Docs SDD:**
+- `docs/sdd/mdd.md`

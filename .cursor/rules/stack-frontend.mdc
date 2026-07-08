@@ -1,0 +1,25 @@
+---
+description: Stack frontend (y)
+globs: ["frontend/**"]
+---
+# Stack frontend
+
+Deriva comandos exactos (lint, typecheck, tests) del MDD §2 y del repo.
+
+- Ejecuta gates del paquete tocado antes de cerrar tareas.
+- Respeta capas y módulos declarados en Blueprint.
+
+**Globs frontend:**
+- `frontend/**`
+- Usa design system y tokens del MDD; no valores ad-hoc.
+- lint + typecheck del paquete UI/SPA antes de merge.
+- Si existe `pantallas.md` (spec-kit) o `docs/sdd/pantallas.md`, léelo antes de crear vistas.
+
+## Hechos del proyecto (SplitSnap)
+
+- **Backend:** NestJS
+- **Frontend:** y
+- **Mobile:** React Native
+
+**Docs SDD:**
+- `docs/sdd/mdd.md`

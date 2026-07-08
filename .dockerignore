@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.cursor
+gobernanza
+storage
+**/.env
+**/.env.*
+!**/.env.example
+**/*.test.ts
+**/*.test.tsx
+coverage
+*.md
+!apps/api/prisma/migrations/**
