@@ -1,7 +1,7 @@
-# Railway — servicio web (root directory: frontend)
+# Railway — servicio web (Settings → Root Directory = frontend)
 [build]
-builder = "NIXPACKS"
-buildCommand = "npm install --include=dev && npm run build"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.railway"
 
 [deploy]
 startCommand = "npm run start"

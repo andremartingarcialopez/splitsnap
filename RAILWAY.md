@@ -64,7 +64,7 @@ git push -u origin main
    - Servicio backend → **Settings** → **Volumes** → **Add Volume**
    - Mount path: `/data/uploads`
 
-6. **Deploy** → el build usa `backend/railway.toml` (Prisma migrate + `npm start`)
+6. **Deploy** → el build usa `backend/Dockerfile.railway` (Docker, no Nixpacks)
 
 7. Comprueba: `https://TU-DOMINIO-API/api/v1/health` → `"status":"healthy"`
 
@@ -127,4 +127,4 @@ Cada cambio: `git push` → Railway redeploya automáticamente (si activaste dep
 | Fotos no se ven | Volume en `/data/uploads` + `STORAGE_DIR=/data/uploads` |
 | Frontend no llega al API | `VITE_API_BASE_URL` correcta y **rebuild** del frontend |
 | Migraciones | Logs: `prisma migrate deploy` en el start del backend |
-| **Build failed** (API o Web) | **Root Directory**: `backend` / `frontend`. Build con `npm install --include=dev` (ver `railway.toml`). Logs en Deployments → deploy fallido |
+| **Build failed** (API o Web) | **Root Directory**: `backend` / `frontend` en Settings → Source. Build con `Dockerfile.railway` (ver `railway.toml`). Logs en Deployments → deploy fallido |

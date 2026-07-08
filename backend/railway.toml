@@ -1,7 +1,7 @@
-# Railway — servicio API (root directory: backend)
+# Railway — servicio API (Settings → Root Directory = backend)
 [build]
-builder = "NIXPACKS"
-buildCommand = "npm install --include=dev && npx prisma generate && npm run build"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.railway"
 
 [deploy]
 startCommand = "npx prisma migrate deploy && npm start"

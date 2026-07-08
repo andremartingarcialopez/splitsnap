@@ -1,0 +1,28 @@
+# Railway — build context: frontend/ (Root Directory = frontend)
+FROM node:20-bookworm-slim AS build
+WORKDIR /app
+
+ARG VITE_API_BASE_URL=/api/v1
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+COPY package.json ./
+RUN npm install --include=dev
+
+COPY index.html vite.config.ts tsconfig.json tsconfig.node.json postcss.config.js tailwind.config.js ./
+COPY src ./src
+
+RUN npm run build
+
+FROM node:20-bookworm-slim AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY package.json ./
+RUN npm install --omit=dev
+
+COPY --from=build /app/dist ./dist
+
+EXPOSE 4173
+
+CMD ["sh", "-c", "npx serve dist -s -l tcp://0.0.0.0:${PORT:-4173}"]
