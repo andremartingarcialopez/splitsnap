@@ -1,0 +1,40 @@
+# Railway @splitsnap/api — build context: repositorio raíz (Root Directory vacío)
+FROM node:20-bookworm-slim AS build
+WORKDIR /app
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY backend/package.json ./package.json
+RUN npm install --include=dev
+
+COPY backend/prisma ./prisma
+COPY backend/tsconfig.json ./tsconfig.json
+COPY backend/src ./src
+
+RUN npx prisma generate && npm run build
+
+FROM node:20-bookworm-slim AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    STORAGE_DIR=/data/uploads
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && groupadd --system app \
+  && useradd --system --gid app app \
+  && mkdir -p /data/uploads \
+  && chown -R app:app /app /data
+
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/package.json ./
+
+USER app
+EXPOSE 3000
+
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]

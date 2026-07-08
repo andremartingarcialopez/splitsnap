@@ -1,0 +1,29 @@
+# Railway @splitsnap/web — build context: repositorio raíz (Root Directory vacío)
+FROM node:20-bookworm-slim AS build
+WORKDIR /app
+
+ARG VITE_API_BASE_URL=/api/v1
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+COPY frontend/package.json ./package.json
+RUN npm install --include=dev
+
+COPY frontend/index.html frontend/vite.config.ts frontend/tsconfig.json frontend/tsconfig.node.json frontend/postcss.config.js frontend/tailwind.config.js ./
+COPY frontend/src ./src
+
+WORKDIR /app
+RUN npm run build
+
+FROM node:20-bookworm-slim AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY frontend/package.json ./package.json
+RUN npm install --omit=dev
+
+COPY --from=build /app/dist ./dist
+
+EXPOSE 4173
+
+CMD ["sh", "-c", "npx serve dist -s -l tcp://0.0.0.0:${PORT:-4173}"]
