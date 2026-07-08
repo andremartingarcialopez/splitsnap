@@ -127,3 +127,4 @@ Cada cambio: `git push` → Railway redeploya automáticamente (si activaste dep
 | Fotos no se ven | Volume en `/data/uploads` + `STORAGE_DIR=/data/uploads` |
 | Frontend no llega al API | `VITE_API_BASE_URL` correcta y **rebuild** del frontend |
 | Migraciones | Logs: `prisma migrate deploy` en el start del backend |
+| **Build failed** (API o Web) | **Root Directory**: `backend` / `frontend`. Build con `npm install --include=dev` (ver `railway.toml`). Logs en Deployments → deploy fallido |
