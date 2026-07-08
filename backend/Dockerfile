@@ -41,7 +41,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 USER app
 EXPOSE 3000
-VOLUME ["/data/uploads"]
+# Persistencia: montar /data/uploads vía docker-compose.yml o Railway Volumes (no usar VOLUME aquí).
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["migrate-and-start"]

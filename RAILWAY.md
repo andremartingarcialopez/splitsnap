@@ -42,7 +42,14 @@ git push -u origin main
 ## 4. Servicio Backend (API)
 
 1. **+ New** → **GitHub Repo** → mismo repo (o **Empty Service** y conecta el repo)
-2. **Settings** → **Root Directory** → `backend`
+2. **Settings** → **Source** → elige **una** de estas opciones:
+
+| Opción | Root Directory | Dockerfile (Settings → Build) |
+|--------|----------------|-------------------------------|
+| **A (recomendada)** | `backend` | `Dockerfile.railway` (auto vía `backend/railway.toml`) |
+| **B** | *(vacío / raíz)* | `Dockerfile.api` |
+
+> Si Root Directory está vacío y no defines Dockerfile, Railway compila desde la raíz del monorepo y falla con `Missing script: "build"`.
 3. **Settings** → **Networking** → **Generate Domain** (ej. `splitsnap-api-production.up.railway.app`)
 4. **Variables** (pestaña Variables del servicio backend):
 
@@ -73,7 +80,14 @@ git push -u origin main
 ## 5. Servicio Frontend (Web)
 
 1. **+ New** → **GitHub Repo** → mismo repo
-2. **Root Directory** → `frontend`
+2. **Settings** → **Source** → elige **una** de estas opciones:
+
+| Opción | Root Directory | Dockerfile (Settings → Build) |
+|--------|----------------|-------------------------------|
+| **A (recomendada)** | `frontend` | `Dockerfile.railway` (auto vía `frontend/railway.toml`) |
+| **B** | *(vacío / raíz)* | `Dockerfile.web` |
+
+> El error `npm error Missing script: "build"` significa que el servicio web **no** tiene Root Directory = `frontend` (está compilando la raíz del repo).
 3. **Generate Domain** (ej. `splitsnap-web-production.up.railway.app`)
 4. **Variables**:
 
@@ -127,4 +141,5 @@ Cada cambio: `git push` → Railway redeploya automáticamente (si activaste dep
 | Fotos no se ven | Volume en `/data/uploads` + `STORAGE_DIR=/data/uploads` |
 | Frontend no llega al API | `VITE_API_BASE_URL` correcta y **rebuild** del frontend |
 | Migraciones | Logs: `prisma migrate deploy` en el start del backend |
-| **Build failed** (API o Web) | **Root Directory**: `backend` / `frontend` en Settings → Source. Build con `Dockerfile.railway` (ver `railway.toml`). Logs en Deployments → deploy fallido |
+| **Build failed** (API o Web) | **Root Directory**: `backend` / `frontend` en Settings → Source. Dockerfile: `Dockerfile.railway` (subcarpeta) o `Dockerfile.api` / `Dockerfile.web` (raíz). **No** uses `backend/Dockerfile` en Railway. Logs en Deployments |
+| **VOLUME not supported** | Railway no permite `VOLUME` en Dockerfile; monta `/data/uploads` en Settings → Volumes |
