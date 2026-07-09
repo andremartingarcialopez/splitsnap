@@ -1,65 +1,27 @@
-import { FormEvent, useRef, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert } from '../components/Alert';
 import { PageHeader } from '../components/PageHeader';
 import { ScanProcessingOverlay } from '../components/ScanProcessingOverlay';
+import { TicketImageSourcePicker } from '../components/TicketImageSourcePicker';
+import { useTicketScanFlow } from '../hooks/useTicketScanFlow';
 import { ApiClientError, ticketsApi } from '../services/api';
-import { prepareTicketImageForUpload } from '../utils/compressTicketImage';
 
 type ManualLine = { name: string; unitPrice: string };
 
 export function NewTicketPage() {
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [errorCode, setErrorCode] = useState<string | null>(null);
-  const [failedTicketId, setFailedTicketId] = useState<string | null>(null);
+  const { previewUrl, processing, error, errorCode, failedTicketId, scanFile } =
+    useTicketScanFlow();
   const [showManual, setShowManual] = useState(false);
+  const [manualError, setManualError] = useState<string | null>(null);
   const [restaurantName, setRestaurantName] = useState('');
   const [lines, setLines] = useState<ManualLine[]>([{ name: '', unitPrice: '' }]);
   const [manualSaving, setManualSaving] = useState(false);
 
-  function onFileChange(next: File | null) {
-    if (!next) return;
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(URL.createObjectURL(next));
-    setError(null);
-    setErrorCode(null);
-    setFailedTicketId(null);
-    void processFile(next);
-  }
-
-  async function processFile(file: File) {
-    setProcessing(true);
-    setError(null);
-    setErrorCode(null);
-    try {
-      const prepared = await prepareTicketImageForUpload(file);
-      const result = await ticketsApi.process(prepared);
-      navigate(`/tickets/${result.ticket.id}/review`);
-    } catch (err) {
-      if (err instanceof Error && err.message === 'EMPTY_IMAGE') {
-        setError('No se pudo leer la foto. Intenta de nuevo o elige una imagen de la galería.');
-        setErrorCode('VALIDATION_ERROR');
-        setShowManual(true);
-        return;
-      }
-      const apiErr = err instanceof ApiClientError ? err : null;
-      setError(
-        apiErr?.message ||
-          'No se pudo procesar el ticket. Puedes ingresar los productos manualmente.',
-      );
-      setErrorCode(apiErr?.code ?? 'OCR_ERROR');
-      const details = apiErr?.details as
-        | { ticketId?: string; allowManualEntry?: boolean }
-        | undefined;
-      if (details?.ticketId) setFailedTicketId(details.ticketId);
-      setShowManual(true);
-    } finally {
-      setProcessing(false);
-    }
+  async function handleFileSelected(file: File) {
+    const ok = await scanFile(file);
+    if (!ok) setShowManual(true);
   }
 
   async function handleManualSubmit(e: FormEvent) {
@@ -72,12 +34,12 @@ export function NewTicketPage() {
       .filter((p) => p.name && p.unitPrice > 0);
 
     if (!products.length) {
-      setError('Agrega al menos un producto con nombre y precio > 0.');
+      setManualError('Agrega al menos un producto con nombre y precio > 0.');
       return;
     }
 
     setManualSaving(true);
-    setError(null);
+    setManualError(null);
     try {
       const ticket = await ticketsApi.createManual({
         restaurantName: restaurantName.trim() || null,
@@ -85,7 +47,7 @@ export function NewTicketPage() {
       });
       navigate(`/tickets/${ticket.id}/review`);
     } catch (err) {
-      setError(
+      setManualError(
         err instanceof ApiClientError
           ? err.message
           : 'No se pudo guardar el ticket manual.',
@@ -101,29 +63,13 @@ export function NewTicketPage() {
 
       <PageHeader
         title="Escanear ticket"
-        subtitle="Toma una foto o elige una imagen. El procesamiento comienza automáticamente."
+        subtitle="Elige cámara o galería. El procesamiento comienza automáticamente."
         backTo="/"
       />
 
       <div className="card space-y-5">
-        <input
-          ref={fileInputRef}
-          id="ticket-image"
-          type="file"
-          accept="image/jpeg,image/jpg,image/png"
-          capture="environment"
-          className="sr-only"
-          onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
-          disabled={processing}
-        />
-
         {!previewUrl ? (
-          <button
-            type="button"
-            className="upload-zone w-full"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={processing}
-          >
+          <div className="upload-zone w-full cursor-default">
             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary-muted dark:bg-primary/20">
               <svg
                 className="h-7 w-7 text-primary dark:text-primary-light"
@@ -140,12 +86,18 @@ export function NewTicketPage() {
               </svg>
             </div>
             <p className="font-semibold text-foreground dark:text-white">
-              Toca para tomar foto o subir imagen
+              Escanea tu ticket
             </p>
             <p className="mt-1 text-sm text-foreground-muted dark:text-slate-400">
               JPG o PNG · máximo 5 MB
             </p>
-          </button>
+            <div className="mt-4">
+              <TicketImageSourcePicker
+                onFileSelected={(file) => void handleFileSelected(file)}
+                disabled={processing}
+              />
+            </div>
+          </div>
         ) : (
           <div className="overflow-hidden rounded-3xl border border-border bg-surface-muted dark:border-slate-800 dark:bg-slate-800/50">
             <img
@@ -153,15 +105,15 @@ export function NewTicketPage() {
               alt="Vista previa del ticket"
               className="mx-auto max-h-80 w-full object-contain"
             />
-            <div className="border-t border-border p-3 text-center dark:border-slate-800">
-              <button
-                type="button"
-                className="btn-ghost btn-sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={processing}
-              >
+            <div className="space-y-3 border-t border-border p-3 dark:border-slate-800">
+              <p className="text-center text-sm text-foreground-muted dark:text-slate-400">
                 Cambiar imagen
-              </button>
+              </p>
+              <TicketImageSourcePicker
+                onFileSelected={(file) => void handleFileSelected(file)}
+                disabled={processing}
+                variant="row"
+              />
             </div>
           </div>
         )}
@@ -195,6 +147,7 @@ export function NewTicketPage() {
 
       {showManual && (
         <form className="card space-y-4" onSubmit={handleManualSubmit}>
+          {manualError && <Alert tone="error">{manualError}</Alert>}
           <div>
             <h2 className="text-lg font-semibold text-foreground dark:text-white">
               Ingreso manual de productos

@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert } from '../components/Alert';
+import { Modal } from '../components/Modal';
+import { ScanProcessingOverlay } from '../components/ScanProcessingOverlay';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
+import { TicketImageSourcePicker } from '../components/TicketImageSourcePicker';
 import { useConfirm } from '../context/ConfirmContext';
+import { useTicketScanFlow } from '../hooks/useTicketScanFlow';
 import { useTickets } from '../hooks/useTicket';
 import { ApiClientError, ticketsApi } from '../services/api';
 import type { Ticket } from '../types/domain';
@@ -21,6 +25,9 @@ export function HomePage() {
   const { confirm } = useConfirm();
   const { tickets, status, reload } = useTickets();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [scanModalOpen, setScanModalOpen] = useState(false);
+  const { processing, error, errorCode, failedTicketId, scanFile, clearScanError } =
+    useTicketScanFlow();
 
   const activeTickets =
     status === 'ready'
@@ -28,6 +35,20 @@ export function HomePage() {
           (t) => t.shareCode && ACTIVE_STATUSES.has(t.sessionStatus ?? '') && !t.finalizedAt,
         )
       : [];
+
+  function openScanModal() {
+    clearScanError();
+    setScanModalOpen(true);
+  }
+
+  function closeScanModal() {
+    setScanModalOpen(false);
+    clearScanError();
+  }
+
+  async function handleScanFile(file: File) {
+    await scanFile(file, { showPreview: false });
+  }
 
   async function handleDeleteSession(ticket: Ticket) {
     const label = ticket.restaurantName || ticket.title;
@@ -49,6 +70,48 @@ export function HomePage() {
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center space-y-8 text-center">
+      <Modal
+        open={scanModalOpen && !processing}
+        title="Escanear ticket"
+        onClose={closeScanModal}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-foreground-muted dark:text-slate-400">
+            Elige cómo capturar el ticket. El procesamiento comienza al seleccionar la imagen.
+          </p>
+          <TicketImageSourcePicker
+            idPrefix="home-ticket"
+            onFileSelected={(file) => void handleScanFile(file)}
+            disabled={processing}
+          />
+          {error && (
+            <Alert tone="error">
+              <div className="space-y-2 text-left">
+                <p>{error}</p>
+                {errorCode && (
+                  <p className="text-xs opacity-80">
+                    Código: {errorCode}
+                    {failedTicketId ? ` · ticket ${failedTicketId}` : ''}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm"
+                  onClick={() => {
+                    setScanModalOpen(false);
+                    navigate('/scan');
+                  }}
+                >
+                  Ir a ingreso manual
+                </button>
+              </div>
+            </Alert>
+          )}
+        </div>
+      </Modal>
+
+      <ScanProcessingOverlay active={processing} />
+
       <div className="space-y-3">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-accent text-white shadow-glow">
           <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -66,7 +129,7 @@ export function HomePage() {
         </p>
       </div>
 
-      <button type="button" className="btn-primary w-full max-w-sm py-4 text-base" onClick={() => navigate('/scan')}>
+      <button type="button" className="btn-primary w-full max-w-sm py-4 text-base" onClick={openScanModal}>
         Escanear ticket
       </button>
 

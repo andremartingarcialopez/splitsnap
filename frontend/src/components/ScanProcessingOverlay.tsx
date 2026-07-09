@@ -29,7 +29,7 @@ export function ScanProcessingOverlay({ active }: ScanProcessingOverlayProps) {
   if (!active) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
       <div className="card w-full max-w-md space-y-6 text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary-muted text-3xl dark:bg-primary/20">
           📷
