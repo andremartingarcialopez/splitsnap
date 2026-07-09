@@ -7,7 +7,13 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: env.MAX_UPLOAD_MB * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const ok = ['image/jpeg', 'image/jpg', 'image/png'].includes(file.mimetype);
+    let mime = file.mimetype;
+    if (!mime || mime === 'application/octet-stream') {
+      const lower = file.originalname.toLowerCase();
+      if (lower.endsWith('.png')) mime = 'image/png';
+      else if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) mime = 'image/jpeg';
+    }
+    const ok = ['image/jpeg', 'image/jpg', 'image/png'].includes(mime);
     if (!ok) {
       cb(new AppError('Only JPG/JPEG/PNG allowed', 'VALIDATION_ERROR', 400));
       return;

@@ -12,6 +12,14 @@ export const api = axios.create({
   timeout: 30_000,
 });
 
+/** FormData debe ir sin Content-Type fijo para que el browser añada el boundary (móvil). */
+api.interceptors.request.use((config) => {
+  if (config.data instanceof FormData && config.headers) {
+    config.headers.set('Content-Type', false);
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiFailure>) => {

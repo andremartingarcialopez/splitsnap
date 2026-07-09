@@ -4,7 +4,7 @@ import { Alert } from '../components/Alert';
 import { PageHeader } from '../components/PageHeader';
 import { ScanProcessingOverlay } from '../components/ScanProcessingOverlay';
 import { ApiClientError, ticketsApi } from '../services/api';
-import { compressTicketImage } from '../utils/compressTicketImage';
+import { prepareTicketImageForUpload } from '../utils/compressTicketImage';
 
 type ManualLine = { name: string; unitPrice: string };
 
@@ -36,10 +36,16 @@ export function NewTicketPage() {
     setError(null);
     setErrorCode(null);
     try {
-      const prepared = await compressTicketImage(file);
+      const prepared = await prepareTicketImageForUpload(file);
       const result = await ticketsApi.process(prepared);
       navigate(`/tickets/${result.ticket.id}/review`);
     } catch (err) {
+      if (err instanceof Error && err.message === 'EMPTY_IMAGE') {
+        setError('No se pudo leer la foto. Intenta de nuevo o elige una imagen de la galería.');
+        setErrorCode('VALIDATION_ERROR');
+        setShowManual(true);
+        return;
+      }
       const apiErr = err instanceof ApiClientError ? err : null;
       setError(
         apiErr?.message ||

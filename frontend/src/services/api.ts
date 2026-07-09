@@ -93,7 +93,6 @@ export const participantsApi = {
       const { data } = await api.post<ApiSuccess<{ photoUrl: string }>>(
         '/participants/photo',
         form,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
       );
       return unwrap(data);
     } catch (err) {
