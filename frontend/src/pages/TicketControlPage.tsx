@@ -27,7 +27,7 @@ export function TicketControlPage() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const handleRealtimeUpdate = useCallback(() => {
-    void reload();
+    void reload({ silent: true });
     setRefreshKey((k) => k + 1);
     if (id) {
       void ticketsApi.getShareInfo(id).then(setShare).catch(() => undefined);
@@ -187,8 +187,8 @@ export function TicketControlPage() {
           products={ticket.products ?? []}
           ticketParticipants={ticket.participants}
           onChanged={() => {
-            void reload();
-            setRefreshKey((k) => k + 1);
+            // Solo actualiza badges del panel; el resumen ya se recargó en silencio
+            void reload({ silent: true });
           }}
         />
       )}

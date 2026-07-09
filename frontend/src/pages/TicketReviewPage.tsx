@@ -108,7 +108,7 @@ export function TicketReviewPage() {
       await ticketsApi.addProduct(id, { name: newName.trim(), unitPrice });
       setNewName('');
       setNewPrice('');
-      await reload();
+      await reload({ silent: true });
     } catch (err) {
       setActionError(err instanceof ApiClientError ? err.message : 'No se pudo agregar.');
     } finally {
@@ -145,7 +145,7 @@ export function TicketReviewPage() {
         globalTipPercentage: globalTip,
         expectedParticipantCount: expectedCount ? Number(expectedCount) : null,
       });
-      await reload();
+      await reload({ silent: true });
       setStep('selection');
     } catch (err) {
       setActionError(err instanceof ApiClientError ? err.message : 'No se guardó la configuración.');
@@ -173,7 +173,7 @@ export function TicketReviewPage() {
           participantId: adminParticipant.participantId,
         });
       }
-      await reload();
+      await reload({ silent: true });
     } catch (err) {
       setActionError(err instanceof ApiClientError ? err.message : 'No se pudo actualizar.');
     } finally {
@@ -288,12 +288,12 @@ export function TicketReviewPage() {
                 onSave={async (input) => {
                   if (!id) return;
                   await ticketsApi.updateProduct(id, product.id, input);
-                  await reload();
+                  await reload({ silent: true });
                 }}
                 onDelete={async () => {
                   if (!id) return;
                   await ticketsApi.deleteProduct(id, product.id);
-                  await reload();
+                  await reload({ silent: true });
                 }}
                 onDuplicate={async () => {
                   if (!id) return;
@@ -301,7 +301,7 @@ export function TicketReviewPage() {
                     name: product.name,
                     unitPrice: product.unitPrice,
                   });
-                  await reload();
+                  await reload({ silent: true });
                 }}
               />
             ))}

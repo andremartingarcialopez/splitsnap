@@ -30,7 +30,7 @@ export function TicketsPage() {
       await ticketsApi.remove(ticket.id);
       showSuccessToast('Ticket eliminado.');
       setActionError(null);
-      await reload();
+      await reload({ silent: true });
     } catch (err) {
       setActionError(err instanceof ApiClientError ? err.message : 'No se pudo eliminar.');
     }

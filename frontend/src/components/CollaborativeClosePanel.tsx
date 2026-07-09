@@ -38,25 +38,33 @@ export function CollaborativeClosePanel({
   const [globalTip, setGlobalTip] = useState(10);
   const [selectedTpId, setSelectedTpId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setStatus('loading');
-    setError(null);
+  const load = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setStatus('loading');
+      setError(null);
+    }
     try {
       const data = await ticketsApi.getSummary(ticketId);
       setSummary(data);
       setGlobalTip(data.globalTipPercentage ?? 10);
       setStatus('ready');
     } catch (err) {
-      setStatus('error');
-      setError(err instanceof ApiClientError ? err.message : 'No se pudo cargar el resumen.');
+      if (silent) {
+        setError(err instanceof ApiClientError ? err.message : 'No se pudo actualizar el resumen.');
+      } else {
+        setStatus('error');
+        setError(err instanceof ApiClientError ? err.message : 'No se pudo cargar el resumen.');
+      }
     }
   }, [ticketId]);
 
   useEffect(() => {
-    void load();
+    // refreshKey > 0: actualización en segundo plano sin colapsar la sección
+    void load({ silent: refreshKey > 0 });
   }, [load, refreshKey]);
 
-  if (status === 'loading') {
+  if (status === 'loading' && !summary) {
     return (
       <section className="card">
         <Spinner label="Calculando resumen…" />
@@ -85,7 +93,7 @@ export function CollaborativeClosePanel({
         current === 'PAID' ? 'PENDING' : 'PAID',
       );
       showSuccessToast(current === 'PAID' ? 'Marcado como pendiente' : 'Marcado como pagado');
-      await load();
+      await load({ silent: true });
       onChanged?.();
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'No se pudo actualizar el pago.');

@@ -64,7 +64,7 @@ export function HomePage() {
       await ticketsApi.remove(ticket.id);
       showSuccessToast('Sesión eliminada.');
       setActionError(null);
-      await reload();
+      await reload({ silent: true });
     } catch (err) {
       setActionError(err instanceof ApiClientError ? err.message : 'No se pudo eliminar la sesión.');
     }

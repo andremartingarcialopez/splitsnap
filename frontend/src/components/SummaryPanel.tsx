@@ -35,21 +35,28 @@ export function SummaryPanel({
   const [recalculating, setRecalculating] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
 
-  const load = useCallback(async () => {
-    setStatus('loading');
-    setError(null);
+  const load = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setStatus('loading');
+      setError(null);
+    }
     try {
       const data = await ticketsApi.getSummary(ticketId);
       setSummary(data);
       setStatus('ready');
     } catch (err) {
-      setStatus('error');
-      setError(err instanceof ApiClientError ? err.message : 'No se pudo calcular.');
+      if (silent) {
+        setError(err instanceof ApiClientError ? err.message : 'No se pudo actualizar el resumen.');
+      } else {
+        setStatus('error');
+        setError(err instanceof ApiClientError ? err.message : 'No se pudo calcular.');
+      }
     }
   }, [ticketId]);
 
   useEffect(() => {
-    void load();
+    void load({ silent: refreshKey > 0 });
   }, [load, refreshKey]);
 
   async function recalculate() {
@@ -86,7 +93,7 @@ export function SummaryPanel({
     }
   }
 
-  if (status === 'loading') {
+  if (status === 'loading' && !summary) {
     return (
       <section className="card">
         <Spinner label="Calculando división…" />
