@@ -53,5 +53,5 @@ export const env = {
     .filter(Boolean),
   storageDir:
     parsed.STORAGE_DIR ||
-    path.resolve(process.cwd(), '../../storage'),
+    path.resolve(process.cwd(), '../storage'),
 };

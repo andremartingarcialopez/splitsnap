@@ -10,6 +10,11 @@ import { normalizeParsedTicket } from '../ai/productNormalizer';
 import { TICKET_SESSION_STATUS } from '../collaboration/collaboration.types';
 import { collaborationService } from '../collaboration/collaboration.service';
 import { calculationService } from '../calculation/calculation.service';
+import {
+  buildInitialTicketTotals,
+  syncTicketTotalsFromProducts,
+  ticketTotalsToPrismaData,
+} from './ticketTotals.service';
 
 function decimal(n: number | null | undefined): Prisma.Decimal | null {
   if (n == null || Number.isNaN(n)) return null;
@@ -69,6 +74,8 @@ function serializeTicketDetail(ticket: TicketDetail) {
     tax: ticket.tax != null ? Number(ticket.tax) : null,
     discount: ticket.discount != null ? Number(ticket.discount) : null,
     total: ticket.total != null ? Number(ticket.total) : null,
+    printedTotal: ticket.printedTotal != null ? Number(ticket.printedTotal) : null,
+    scanTaxRate: ticket.scanTaxRate != null ? Number(ticket.scanTaxRate) : null,
     tipMode: ticket.tipMode,
     globalTipPercentage:
       ticket.globalTipPercentage != null ? Number(ticket.globalTipPercentage) : null,
@@ -127,6 +134,8 @@ function serializeTicketListItem(
     tax: ticket.tax != null ? Number(ticket.tax) : null,
     discount: ticket.discount != null ? Number(ticket.discount) : null,
     total: ticket.total != null ? Number(ticket.total) : null,
+    printedTotal: ticket.printedTotal != null ? Number(ticket.printedTotal) : null,
+    scanTaxRate: ticket.scanTaxRate != null ? Number(ticket.scanTaxRate) : null,
     tipMode: ticket.tipMode,
     globalTipPercentage:
       ticket.globalTipPercentage != null ? Number(ticket.globalTipPercentage) : null,
@@ -198,6 +207,16 @@ export class TicketService {
         ? products.reduce((a, p) => a + p.unitPrice, 0)
         : input.subtotal ?? null;
 
+    const initialTotals =
+      computedSubtotal != null
+        ? buildInitialTicketTotals(computedSubtotal, {
+            tax: input.tax,
+            discount: input.discount,
+            total: input.total ?? computedSubtotal,
+            printedTotal: input.total ?? computedSubtotal,
+          })
+        : null;
+
     const ticket = await prisma.ticket.create({
       data: {
         title:
@@ -206,10 +225,14 @@ export class TicketService {
           'Nuevo ticket',
         restaurantName: input.restaurantName?.trim() || null,
         ticketImageUrl: input.ticketImageUrl?.trim() || '/uploads/tickets/manual-placeholder',
-        subtotal: decimal(input.subtotal ?? computedSubtotal),
-        tax: decimal(input.tax),
-        discount: decimal(input.discount ?? 0),
-        total: decimal(input.total ?? computedSubtotal),
+        ...(initialTotals
+          ? ticketTotalsToPrismaData(initialTotals)
+          : {
+              subtotal: decimal(input.subtotal ?? null),
+              tax: decimal(input.tax),
+              discount: decimal(input.discount ?? 0),
+              total: decimal(input.total),
+            }),
         tipMode: input.tipMode ?? 'GLOBAL',
         globalTipPercentage: decimal(input.globalTipPercentage),
         processingStatus: products.length ? 'COMPLETED' : 'PENDING',
@@ -553,6 +576,16 @@ export class TicketService {
 
       const restaurant = parsed.restaurantName?.trim() || null;
       const title = restaurant || 'Ticket digitalizado';
+      const productsSum = parsed.normalizedProducts.reduce(
+        (acc, item) => acc + item.unitPrice,
+        0,
+      );
+      const initialTotals = buildInitialTicketTotals(productsSum, {
+        tax: parsed.tax,
+        discount: parsed.discount,
+        total: parsed.total,
+        printedTotal: parsed.total,
+      });
 
       await prisma.$transaction(async (tx) => {
         await tx.product.deleteMany({ where: { ticketId: ticket.id } });
@@ -561,10 +594,7 @@ export class TicketService {
           data: {
             title,
             restaurantName: restaurant,
-            subtotal: decimal(parsed.subtotal),
-            tax: decimal(parsed.tax),
-            discount: decimal(parsed.discount ?? 0),
-            total: decimal(parsed.total),
+            ...ticketTotalsToPrismaData(initialTotals),
             processingStatus: 'COMPLETED',
             sessionStatus: TICKET_SESSION_STATUS.CREATED,
             rawOcrText: text,
@@ -641,7 +671,7 @@ export class TicketService {
       throw new AppError('unitPrice must be > 0', 'VALIDATION_ERROR', 400);
     }
 
-    const updated = await prisma.product.update({
+    await prisma.product.update({
       where: { id: productId },
       data: {
         ...(input.name !== undefined ? { name: input.name.trim() } : {}),
@@ -649,6 +679,12 @@ export class TicketService {
           ? { unitPrice: decimal(input.unitPrice)! }
           : {}),
       },
+    });
+
+    await syncTicketTotalsFromProducts(ticketId);
+
+    const updated = await prisma.product.findUniqueOrThrow({
+      where: { id: productId },
     });
 
     return {
@@ -676,6 +712,7 @@ export class TicketService {
         detectedByAI: false,
       },
     });
+    await syncTicketTotalsFromProducts(ticketId);
     return {
       ...created,
       unitPrice: Number(created.unitPrice),
@@ -691,6 +728,7 @@ export class TicketService {
       throw new AppError('Product not found', 'NOT_FOUND', 404);
     }
     await prisma.product.delete({ where: { id: productId } });
+    await syncTicketTotalsFromProducts(ticketId);
     return { id: productId };
   }
 }

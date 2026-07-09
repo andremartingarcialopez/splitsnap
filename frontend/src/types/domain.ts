@@ -72,6 +72,10 @@ export type Ticket = {
   tax: number | null;
   discount: number | null;
   total: number | null;
+  /** Total impreso en el recibo físico (referencia del escaneo) */
+  printedTotal?: number | null;
+  /** Tasa de impuesto efectiva fijada al escanear */
+  scanTaxRate?: number | null;
   tipMode: string;
   globalTipPercentage: number | null;
   processingStatus: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | string;

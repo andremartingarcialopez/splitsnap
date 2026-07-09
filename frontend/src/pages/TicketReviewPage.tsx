@@ -77,6 +77,24 @@ export function TicketReviewPage() {
     [ticket?.products],
   );
 
+  const taxRatePercent = useMemo(() => {
+    if (ticket?.scanTaxRate != null && ticket.scanTaxRate > 0) {
+      return Math.round(ticket.scanTaxRate * 1000) / 10;
+    }
+    if (ticket?.subtotal && ticket?.tax && ticket.subtotal > 0) {
+      return Math.round((ticket.tax / ticket.subtotal) * 1000) / 10;
+    }
+    return null;
+  }, [ticket?.scanTaxRate, ticket?.subtotal, ticket?.tax]);
+
+  const printedTotalDiff = useMemo(() => {
+    if (ticket?.printedTotal == null || ticket.total == null) return null;
+    return Math.abs(ticket.total - ticket.printedTotal);
+  }, [ticket?.printedTotal, ticket?.total]);
+
+  const hasPrintedVariance =
+    printedTotalDiff != null && printedTotalDiff > 0.01;
+
   async function handleAddProduct(e: FormEvent) {
     e.preventDefault();
     if (!id) return;
@@ -223,18 +241,58 @@ export function TicketReviewPage() {
 
       {step === 'products' && (
         <>
-          <div className="card space-y-2">
+          <div className="card space-y-3">
             <div className="flex flex-wrap justify-between gap-2 text-sm">
               <span className="text-foreground-muted">
                 {ticket.products?.length ?? 0} productos
               </span>
-              <span className="font-semibold">Subtotal {formatMoney(productsSubtotal)}</span>
-              {ticket.total != null && (
-                <span className="font-bold text-primary dark:text-primary-light">
-                  Total ticket {formatMoney(ticket.total)}
-                </span>
-              )}
             </div>
+
+            <dl className="space-y-1.5 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-foreground-muted">Suma productos</dt>
+                <dd className="font-medium">{formatMoney(productsSubtotal)}</dd>
+              </div>
+              {(ticket.tax ?? 0) > 0 && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-foreground-muted">
+                    Impuesto
+                    {taxRatePercent != null ? ` (≈${taxRatePercent}%)` : ''}
+                  </dt>
+                  <dd className="font-medium">{formatMoney(ticket.tax ?? 0)}</dd>
+                </div>
+              )}
+              {(ticket.discount ?? 0) > 0 && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-foreground-muted">Descuento</dt>
+                  <dd className="font-medium text-emerald-600 dark:text-emerald-400">
+                    −{formatMoney(ticket.discount ?? 0)}
+                  </dd>
+                </div>
+              )}
+              <div className="flex justify-between gap-4 border-t border-border pt-2 dark:border-slate-800">
+                <dt className="font-semibold text-foreground dark:text-white">
+                  Total calculado
+                </dt>
+                <dd className="text-lg font-bold text-primary dark:text-primary-light">
+                  {formatMoney(ticket.total ?? productsSubtotal)}
+                </dd>
+              </div>
+              {ticket.printedTotal != null && (
+                <div className="flex justify-between gap-4 text-xs">
+                  <dt className="text-foreground-muted">Total impreso (referencia)</dt>
+                  <dd className="text-foreground-muted">{formatMoney(ticket.printedTotal)}</dd>
+                </div>
+              )}
+            </dl>
+
+            {hasPrintedVariance && (
+              <Alert tone="warning">
+                Los productos ya no coinciden con el ticket escaneado (
+                {formatMoney(printedTotalDiff!)} de diferencia vs. el total impreso). El total
+                calculado se actualiza automáticamente al editar productos.
+              </Alert>
+            )}
           </div>
 
           <div className="space-y-3">
