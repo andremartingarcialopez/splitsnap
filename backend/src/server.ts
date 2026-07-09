@@ -3,6 +3,6 @@ import { env } from './config/env';
 
 const app = createApp();
 
-app.listen(env.PORT, () => {
-  console.log(`[splitsnap-api] listening on http://localhost:${env.PORT}`);
+app.listen(env.PORT, '0.0.0.0', () => {
+  console.log(`[splitsnap-api] listening on http://0.0.0.0:${env.PORT}`);
 });

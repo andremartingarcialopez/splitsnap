@@ -4,7 +4,6 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile.railway"
 
 [deploy]
-startCommand = "npx prisma migrate deploy && npm start"
-healthcheckPath = "/api/v1/health"
+healthcheckPath = "/api/v1/health/live"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"

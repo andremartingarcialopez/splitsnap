@@ -134,12 +134,17 @@ Cada cambio: `git push` → Railway redeploya automáticamente (si activaste dep
 
 ## Solución de problemas
 
+| Error en logs | Causa | Solución |
+|---------------|-------|----------|
+| `npm error Missing script: "build"` (web) | Railway compila la **raíz** del monorepo con Nixpacks | **Settings → Source → Root Directory** = `frontend`. Dockerfile = `Dockerfile.railway` (o raíz vacía + `Dockerfile.web`) |
+| `Dockerfile invalid: VOLUME at Line 44` (api) | Railway usa `backend/Dockerfile` (docker-compose) | Root Directory = `backend`, Dockerfile = **`Dockerfile.railway`** (no `Dockerfile`) |
+| `Healthcheck failure` / `service unavailable` (api) | El probe `/api/v1/health` devuelve **503** si MySQL no conecta | Verifica `DATABASE_URL` = `${{MySQL.MYSQL_URL}}`. Revisa **Deploy Logs** (¿`prisma migrate deploy` OK?). El healthcheck de Railway usa `/api/v1/health/live` |
+| Build con Nixpacks en vez de Docker | `railway.toml` no se lee (Root Directory incorrecto) | Root Directory debe ser `backend` o `frontend` según el servicio |
+
 | Problema | Qué revisar |
 |----------|-------------|
-| API no arranca | Logs del servicio backend; `DATABASE_URL` referenciada al MySQL |
+| API no arranca | Deploy Logs; `DATABASE_URL` referenciada al MySQL |
 | CORS en el navegador | `CORS_ORIGIN` = URL exacta del frontend (con `https://`) |
 | Fotos no se ven | Volume en `/data/uploads` + `STORAGE_DIR=/data/uploads` |
 | Frontend no llega al API | `VITE_API_BASE_URL` correcta y **rebuild** del frontend |
-| Migraciones | Logs: `prisma migrate deploy` en el start del backend |
-| **Build failed** (API o Web) | **Root Directory**: `backend` / `frontend` en Settings → Source. Dockerfile: `Dockerfile.railway` (subcarpeta) o `Dockerfile.api` / `Dockerfile.web` (raíz). **No** uses `backend/Dockerfile` en Railway. Logs en Deployments |
-| **VOLUME not supported** | Railway no permite `VOLUME` en Dockerfile; monta `/data/uploads` en Settings → Volumes |
+| Migraciones | Deploy Logs: `prisma migrate deploy` al arrancar el contenedor |
