@@ -6,14 +6,14 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#0066CC',
-          hover: '#0052A3',
-          light: '#4DA3FF',
-          muted: '#E8F4FD',
+          DEFAULT: '#16A34A',
+          hover: '#15803D',
+          light: '#4ADE80',
+          muted: '#DCFCE7',
         },
         accent: {
-          DEFAULT: '#00A3FF',
-          hover: '#0088DD',
+          DEFAULT: '#22C55E',
+          hover: '#16A34A',
         },
         success: {
           DEFAULT: '#10B981',
@@ -52,7 +52,7 @@ export default {
       boxShadow: {
         card: '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
         'card-lg': '0 4px 12px -2px rgb(0 0 0 / 0.08)',
-        glow: '0 0 24px -4px rgb(0 102 204 / 0.35)',
+        glow: '0 0 24px -4px rgb(22 163 74 / 0.35)',
       },
     },
   },

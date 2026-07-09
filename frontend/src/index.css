@@ -95,7 +95,7 @@
   }
 
   .badge-info {
-    @apply inline-flex items-center rounded-pill px-2.5 py-0.5 text-xs font-semibold bg-primary-muted text-blue-900 dark:bg-blue-950/50 dark:text-blue-300;
+    @apply inline-flex items-center rounded-pill px-2.5 py-0.5 text-xs font-semibold bg-primary-muted text-green-900 dark:bg-green-950/50 dark:text-green-300;
   }
 
   .badge-neutral {
