@@ -10,7 +10,6 @@ import {
 import { SelectField } from '../components/SelectField';
 import { Spinner } from '../components/Spinner';
 import { SummaryPanel } from '../components/SummaryPanel';
-import { BackButton } from '../components/BackButton';
 import { TipConfig } from '../components/TipConfig';
 import {
   ApiClientError,
@@ -273,7 +272,6 @@ export function TicketDetailPage() {
   if (status === 'loading') {
     return (
       <div className="space-y-4">
-        <BackButton to="/tickets" className="-ml-2" />
         <Spinner label="Cargando ticket…" />
       </div>
     );
@@ -282,7 +280,6 @@ export function TicketDetailPage() {
   if (status === 'error' || !ticket) {
     return (
       <div className="space-y-4">
-        <BackButton to="/tickets" className="-ml-2" />
         <Alert tone="error">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span>{error || 'Ticket no encontrado'}</span>
@@ -303,7 +300,6 @@ export function TicketDetailPage() {
   if (isFinalized) {
     return (
       <div className="space-y-6">
-        <BackButton to="/tickets" className="-ml-2" />
         <Alert tone="info">
           Este ticket está finalizado.{' '}
           <Link to={`/history/${ticket.id}`} className="underline">
@@ -319,7 +315,6 @@ export function TicketDetailPage() {
 
   return (
     <div className="space-y-6 min-w-0 max-w-full">
-      <BackButton to="/tickets" className="-ml-2" />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="badge-info text-xs uppercase tracking-wide">{ticket.processingStatus}</p>

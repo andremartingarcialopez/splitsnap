@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
 import { AvatarPicker } from '../components/AvatarPicker';
 import { ErrorState } from '../components/ErrorState';
@@ -28,7 +28,6 @@ type Step = 'welcome' | 'register' | 'select' | 'waiting';
 
 export function PublicTicketPage() {
   const { shareCode = '' } = useParams<{ shareCode: string }>();
-  const navigate = useNavigate();
   const [step, setStep] = useState<Step>('welcome');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -172,24 +171,6 @@ export function PublicTicketPage() {
     setStep('register');
   }
 
-  function handlePublicBack() {
-    if (step === 'register') {
-      setStep('welcome');
-      return;
-    }
-    if (step === 'select') {
-      setStep('register');
-      return;
-    }
-    if (step === 'waiting' && session?.canEdit) {
-      setStep('select');
-      return;
-    }
-    navigate(-1);
-  }
-
-  const showPublicBack = step !== 'welcome';
-
   if (loading) {
     return (
       <PublicTicketLayout>
@@ -200,7 +181,7 @@ export function PublicTicketPage() {
 
   if (error && !ticket) {
     return (
-      <PublicTicketLayout onBack={() => navigate(-1)}>
+      <PublicTicketLayout>
         <ErrorState message={error} onRetry={() => void bootstrap()} />
       </PublicTicketLayout>
     );
@@ -208,7 +189,7 @@ export function PublicTicketPage() {
 
   if (!ticket) {
     return (
-      <PublicTicketLayout onBack={() => navigate(-1)}>
+      <PublicTicketLayout>
         <ErrorState message="Ticket no encontrado" onRetry={() => void bootstrap()} />
       </PublicTicketLayout>
     );
@@ -219,7 +200,7 @@ export function PublicTicketPage() {
     expected > 0 ? Math.min(100, (ticket.completedParticipantCount / expected) * 100) : 0;
 
   return (
-    <PublicTicketLayout onBack={showPublicBack ? handlePublicBack : undefined}>
+    <PublicTicketLayout>
       <div className="space-y-5">
         {(step === 'select' || step === 'waiting') && (
           <div className="flex justify-end">

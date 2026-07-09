@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
-import { BackButton } from '../components/BackButton';
 import { HistoryListSkeleton } from '../components/Skeleton';
 import { ShareSummaryActions } from '../components/ShareSummaryActions';
 import { ApiClientError, historyApi } from '../services/api';
@@ -43,7 +42,6 @@ export function HistoryDetailPage() {
   if (status === 'loading') {
     return (
       <div className="space-y-4">
-        <BackButton to="/history" className="-ml-2" />
         <HistoryListSkeleton />
       </div>
     );
@@ -52,7 +50,6 @@ export function HistoryDetailPage() {
   if (status === 'error' || !detail) {
     return (
       <div className="space-y-4">
-        <BackButton to="/history" className="-ml-2" />
         <Alert tone="error">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span>{error || 'Ticket no encontrado en historial'}</span>
@@ -71,7 +68,6 @@ export function HistoryDetailPage() {
 
   return (
     <div className="space-y-6">
-      <BackButton to="/history" className="-ml-2" />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted">Histórico · solo lectura</p>

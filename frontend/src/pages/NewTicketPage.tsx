@@ -66,7 +66,6 @@ export function NewTicketPage() {
       <PageHeader
         title="Escanear ticket"
         subtitle="Elige cámara o galería. El procesamiento comienza automáticamente."
-        backTo="/"
       />
 
       <div className="card space-y-5">

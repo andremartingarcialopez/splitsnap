@@ -22,7 +22,6 @@ export function HistoryPage() {
       <PageHeader
         title="Historial"
         subtitle="Tickets finalizados con resumen de división."
-        backTo="/"
       />
 
       {status === 'loading' && <HistoryListSkeleton />}
