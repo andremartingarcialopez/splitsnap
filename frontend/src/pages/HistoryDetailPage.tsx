@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
 import { BackButton } from '../components/BackButton';
-import { Spinner } from '../components/Spinner';
+import { HistoryListSkeleton } from '../components/Skeleton';
+import { ShareSummaryActions } from '../components/ShareSummaryActions';
 import { ApiClientError, historyApi } from '../services/api';
 import type { HistoryDetail, Product, TicketParticipantLink } from '../types/domain';
 import { resolveMediaUrl } from '../utils/mediaUrl';
@@ -43,7 +44,7 @@ export function HistoryDetailPage() {
     return (
       <div className="space-y-4">
         <BackButton to="/history" className="-ml-2" />
-        <Spinner label="Cargando detalle histórico…" />
+        <HistoryListSkeleton />
       </div>
     );
   }
@@ -176,7 +177,10 @@ export function HistoryDetailPage() {
       </section>
 
       <section className="card space-y-4">
-        <h2 className="text-base font-medium">Resumen de división</h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-base font-medium">Resumen de división</h2>
+          <ShareSummaryActions detail={detail} />
+        </div>
         {summary.varianceWarning && summary.varianceAmount != null && (
           <Alert tone="warning">
             Diferencia vs total impreso: {money(summary.varianceAmount)}

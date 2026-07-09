@@ -3,8 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
 import { AvatarPicker } from '../components/AvatarPicker';
 import { ErrorState } from '../components/ErrorState';
-import { LoadingState } from '../components/LoadingState';
 import { LiveConnectionBadge } from '../components/LiveConnectionBadge';
+import { PublicTicketPageSkeleton } from '../components/Skeleton';
+import { SelectionFloatingBar } from '../components/SelectionFloatingBar';
 import {
   ParticipantAvatarBadge,
   ParticipantMiniSummary,
@@ -21,6 +22,7 @@ import {
   loadParticipantSession,
   saveParticipantSession,
 } from '../utils/participantSession';
+import { showInfoToast } from '../utils/toast';
 
 type Step = 'welcome' | 'register' | 'select' | 'waiting';
 
@@ -81,6 +83,9 @@ export function PublicTicketPage() {
 
   const handleRealtimeUpdate = useCallback(
     (payload: TicketUpdatedPayload) => {
+      if (payload.event === 'ticket_finalized') {
+        showInfoToast('El administrador cerró el ticket.');
+      }
       setTicket(payload.ticket);
       const participantId = session?.ticketParticipantId;
       if (!participantId) return;
@@ -134,6 +139,9 @@ export function PublicTicketPage() {
       const result = await publicApi.toggleProduct(code, session.ticketParticipantId, productId);
       setTicket(result.ticket);
       setSession(result.session);
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(12);
+      }
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'No se pudo actualizar.');
     } finally {
@@ -185,7 +193,7 @@ export function PublicTicketPage() {
   if (loading) {
     return (
       <PublicTicketLayout>
-        <LoadingState label="Cargando ticket…" />
+        <PublicTicketPageSkeleton />
       </PublicTicketLayout>
     );
   }
@@ -307,7 +315,7 @@ export function PublicTicketPage() {
               </Alert>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-2 pb-4">
               {ticket.products.map((product) => (
                 <ParticipantProductCard
                   key={product.id}
@@ -319,21 +327,14 @@ export function PublicTicketPage() {
               ))}
             </div>
 
-            <ParticipantMiniSummary
+            <SelectionFloatingBar
               productCount={session.selectedProducts.length}
               subtotal={session.subtotal}
-              tip={session.tip}
               total={session.total}
-            />
-
-            <button
-              type="button"
-              className="btn-primary w-full"
               disabled={busy}
-              onClick={() => setShowConfirm(true)}
-            >
-              Finalizar selección
-            </button>
+              busy={busy}
+              onContinue={() => setShowConfirm(true)}
+            />
           </>
         )}
 

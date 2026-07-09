@@ -7,6 +7,7 @@ import { ApiClientError, ticketsApi } from '../services/api';
 import { useConfirm } from '../context/ConfirmContext';
 import type { TicketSummary } from '../types/domain';
 import { formatMoney } from '../utils/money';
+import { showSuccessToast } from '../utils/toast';
 
 type Props = {
   ticketId: string;
@@ -76,6 +77,7 @@ export function CollaborativeClosePanel({
         ticketParticipantId,
         current === 'PAID' ? 'PENDING' : 'PAID',
       );
+      showSuccessToast(current === 'PAID' ? 'Marcado como pendiente' : 'Marcado como pagado');
       await load();
       onChanged?.();
     } catch (err) {

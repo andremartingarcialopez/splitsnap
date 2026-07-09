@@ -21,7 +21,7 @@ export function ParticipantProductCard({
       disabled={disabled}
       onClick={onToggle}
       className={[
-        'w-full rounded-2xl border p-4 text-left transition active:scale-[0.99]',
+        'w-full rounded-2xl border p-4 text-left transition duration-200 active:scale-[0.99]',
         selected
           ? 'border-primary bg-primary-muted/40 ring-2 ring-primary/25 dark:border-primary-light dark:bg-primary/10'
           : 'border-border bg-white dark:border-slate-800 dark:bg-slate-900',
@@ -30,17 +30,24 @@ export function ParticipantProductCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-foreground dark:text-white">
-            {product.emoji ? `${product.emoji} ` : ''}
-            {product.name}
-          </p>
-          <p className="mt-1 text-sm font-bold text-primary dark:text-primary-light">
-            {formatMoney(product.unitPrice)}
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-semibold text-foreground dark:text-white">
+              {product.emoji ? `${product.emoji} ` : ''}
+              {product.name}
+            </p>
             {product.isShared && (
-              <span className="ml-2 text-xs font-medium text-foreground-muted">
-                · Compartido ({product.assignmentCount})
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                Compartido · {product.assignmentCount}
               </span>
             )}
+            {selected && (
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary dark:text-primary-light">
+                Seleccionado
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-sm font-bold text-primary dark:text-primary-light">
+            {formatMoney(product.unitPrice)}
           </p>
           {product.assignees.length > 0 && (
             <p className="mt-2 text-xs text-foreground-muted dark:text-slate-400">

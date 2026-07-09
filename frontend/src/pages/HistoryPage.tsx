@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
-import { LoadingState } from '../components/LoadingState';
+import { HistoryListSkeleton } from '../components/Skeleton';
 import { PageHeader } from '../components/PageHeader';
 import { useHistory } from '../hooks/useHistory';
 
@@ -25,7 +25,7 @@ export function HistoryPage() {
         backTo="/"
       />
 
-      {status === 'loading' && <LoadingState label="Cargando historial…" />}
+      {status === 'loading' && <HistoryListSkeleton />}
 
       {status === 'error' && (
         <ErrorState message={error || 'Error desconocido'} onRetry={() => void reload()} />
@@ -33,10 +33,10 @@ export function HistoryPage() {
 
       {status === 'ready' && items.length === 0 && (
         <EmptyState
-          title="Sin tickets finalizados"
-          description="Cuando finalices un ticket desde su detalle, aparecerá aquí con el resumen de la división."
-          actionLabel="Ver tickets activos"
-          onAction={() => navigate('/tickets')}
+          title="Todavía no tienes tickets"
+          description="Escanea tu primer ticket, compártelo con tu grupo y ciérralo cuando todos paguen."
+          actionLabel="Escanear ticket"
+          onAction={() => navigate('/scan')}
         />
       )}
 
