@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Alert } from '../components/Alert';
 import { BackButton } from '../components/BackButton';
 import { CollaborativeClosePanel } from '../components/CollaborativeClosePanel';
 import { ErrorState } from '../components/ErrorState';
@@ -8,16 +9,21 @@ import { LoadingState } from '../components/LoadingState';
 import { PageHeader } from '../components/PageHeader';
 import { ShareTicketPanel } from '../components/ShareTicketPanel';
 import { avatarEmoji } from '../constants/avatars';
+import { useConfirm } from '../context/ConfirmContext';
 import { useTicket } from '../hooks/useTicket';
 import { useTicketRealtime } from '../hooks/useTicketRealtime';
-import { ticketsApi } from '../services/api';
+import { ApiClientError, ticketsApi } from '../services/api';
 import type { ShareInfo } from '../types/domain';
+import { showSuccessToast } from '../utils/toast';
 
 export function TicketControlPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { confirm } = useConfirm();
   const { ticket, status, error, reload } = useTicket(id);
   const [share, setShare] = useState<ShareInfo | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const handleRealtimeUpdate = useCallback(() => {
     void reload();
@@ -37,6 +43,24 @@ export function TicketControlPage() {
     if (!id || !ticket?.shareCode) return;
     void ticketsApi.getShareInfo(id).then(setShare).catch(() => setShare(null));
   }, [id, ticket?.shareCode]);
+
+  async function handleDeleteSession() {
+    if (!ticket) return;
+    const label = ticket.restaurantName || ticket.title;
+    const ok = await confirm({
+      title: 'Eliminar sesión',
+      message: `¿Eliminar «${label}»? Se borrarán productos, participantes y asignaciones.`,
+      tone: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await ticketsApi.remove(ticket.id);
+      showSuccessToast('Sesión eliminada.');
+      navigate('/');
+    } catch (err) {
+      setActionError(err instanceof ApiClientError ? err.message : 'No se pudo eliminar la sesión.');
+    }
+  }
 
   if (status === 'loading') {
     return (
@@ -86,9 +110,18 @@ export function TicketControlPage() {
                 Compartir
               </Link>
             ) : null}
+            <button
+              type="button"
+              className="btn-danger btn-sm"
+              onClick={() => void handleDeleteSession()}
+            >
+              Eliminar sesión
+            </button>
           </>
         }
       />
+
+      {actionError && <Alert tone="error">{actionError}</Alert>}
 
       <div className="card space-y-4">
         <div className="flex items-center justify-between">
@@ -158,6 +191,8 @@ export function TicketControlPage() {
           ticketId={id!}
           sessionStatus={ticket.sessionStatus}
           refreshKey={refreshKey}
+          products={ticket.products ?? []}
+          ticketParticipants={ticket.participants}
           onChanged={() => {
             void reload();
             setRefreshKey((k) => k + 1);

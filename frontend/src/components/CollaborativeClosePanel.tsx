@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert } from './Alert';
 import { GlobalTipSelector } from './GlobalTipSelector';
+import { ParticipantConsumptionModal } from './ParticipantConsumptionModal';
 import { Spinner } from './Spinner';
 import { ApiClientError, ticketsApi } from '../services/api';
 import { useConfirm } from '../context/ConfirmContext';
-import type { TicketSummary } from '../types/domain';
+import type { Product, TicketParticipantLink, TicketSummary } from '../types/domain';
 import { formatMoney } from '../utils/money';
 import { showSuccessToast } from '../utils/toast';
 
@@ -14,6 +15,9 @@ type Props = {
   sessionStatus?: string;
   refreshKey?: number;
   onChanged?: () => void;
+  /** Productos del ticket (ya cargados en el panel de control). */
+  products?: Product[];
+  ticketParticipants?: TicketParticipantLink[];
 };
 
 export function CollaborativeClosePanel({
@@ -21,6 +25,8 @@ export function CollaborativeClosePanel({
   sessionStatus,
   refreshKey = 0,
   onChanged,
+  products = [],
+  ticketParticipants,
 }: Props) {
   const navigate = useNavigate();
   const { confirm } = useConfirm();
@@ -30,6 +36,7 @@ export function CollaborativeClosePanel({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [globalTip, setGlobalTip] = useState(10);
+  const [selectedTpId, setSelectedTpId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -87,18 +94,6 @@ export function CollaborativeClosePanel({
     }
   }
 
-  async function saveTip(value: number) {
-    setGlobalTip(value);
-    setError(null);
-    try {
-      await ticketsApi.updateCollaborationSettings(ticketId, { globalTipPercentage: value });
-      await load();
-      onChanged?.();
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : 'No se pudo actualizar la propina.');
-    }
-  }
-
   async function finalize() {
     if (!summary?.canClose) return;
     const ok = await confirm({
@@ -121,6 +116,9 @@ export function CollaborativeClosePanel({
   }
 
   const paidCount = summary.participants.filter((p) => p.paymentStatus === 'PAID').length;
+  const selectedParticipant =
+    summary.participants.find((p) => p.ticketParticipantId === selectedTpId) ?? null;
+  const canShowConsumption = products.length > 0;
 
   return (
     <section className="card space-y-4">
@@ -170,12 +168,15 @@ export function CollaborativeClosePanel({
         </Alert>
       )}
 
-      {sessionStatus === 'REVIEWING' && (
-        <div className="space-y-2">
+      <div className="space-y-2 rounded-2xl border border-border bg-surface-muted/60 p-4 dark:border-slate-800 dark:bg-slate-800/30">
+        <div>
           <p className="text-sm font-medium text-foreground dark:text-white">Propina global</p>
-          <GlobalTipSelector value={globalTip} onChange={(value) => void saveTip(value)} />
+          <p className="text-xs text-foreground-muted dark:text-slate-400">
+            Acordada al iniciar la división (referencia del restaurante). No se puede modificar aquí.
+          </p>
         </div>
-      )}
+        <GlobalTipSelector value={globalTip} readOnly />
+      </div>
 
       <ul className="space-y-2">
         {summary.participants.map((p) => {
@@ -187,14 +188,27 @@ export function CollaborativeClosePanel({
               key={tpId}
               className="flex flex-col gap-3 rounded-2xl bg-surface-muted px-4 py-3 dark:bg-slate-800/50 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div>
+              <button
+                type="button"
+                className={[
+                  'min-w-0 flex-1 text-left',
+                  canShowConsumption ? 'cursor-pointer rounded-xl transition hover:opacity-80' : '',
+                ].join(' ')}
+                disabled={!canShowConsumption}
+                onClick={() => canShowConsumption && setSelectedTpId(tpId)}
+              >
                 <p className="font-semibold text-foreground dark:text-white">
                   {p.name || 'Participante'}
                 </p>
                 <p className="text-sm text-foreground-muted">
                   Subtotal {formatMoney(p.subtotal)} · Propina {formatMoney(p.tip)}
                 </p>
-              </div>
+                {canShowConsumption && (
+                  <p className="mt-1 text-xs text-primary dark:text-primary-light">
+                    Ver consumo
+                  </p>
+                )}
+              </button>
               <div className="flex items-center justify-between gap-3 sm:justify-end">
                 <p className="text-lg font-bold text-primary dark:text-primary-light">
                   {formatMoney(p.total)}
@@ -221,6 +235,17 @@ export function CollaborativeClosePanel({
           {formatMoney(summary.grandTotal)}
         </span>
       </div>
+
+      <ParticipantConsumptionModal
+        open={selectedParticipant != null}
+        participant={selectedParticipant}
+        products={products}
+        ticketParticipants={ticketParticipants}
+        sessionStatus={sessionStatus}
+        busyId={busyId}
+        onClose={() => setSelectedTpId(null)}
+        onTogglePayment={(id, current) => void togglePayment(id, current)}
+      />
     </section>
   );
 }

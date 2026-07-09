@@ -1,6 +1,13 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Alert } from '../components/Alert';
+import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
+import { useConfirm } from '../context/ConfirmContext';
 import { useTickets } from '../hooks/useTicket';
+import { ApiClientError, ticketsApi } from '../services/api';
+import type { Ticket } from '../types/domain';
 import { formatMoney } from '../utils/money';
+import { showSuccessToast } from '../utils/toast';
 
 const ACTIVE_STATUSES = new Set([
   'WAITING_FOR_PARTICIPANTS',
@@ -11,7 +18,9 @@ const ACTIVE_STATUSES = new Set([
 
 export function HomePage() {
   const navigate = useNavigate();
-  const { tickets, status } = useTickets();
+  const { confirm } = useConfirm();
+  const { tickets, status, reload } = useTickets();
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const activeTickets =
     status === 'ready'
@@ -19,6 +28,24 @@ export function HomePage() {
           (t) => t.shareCode && ACTIVE_STATUSES.has(t.sessionStatus ?? '') && !t.finalizedAt,
         )
       : [];
+
+  async function handleDeleteSession(ticket: Ticket) {
+    const label = ticket.restaurantName || ticket.title;
+    const ok = await confirm({
+      title: 'Eliminar sesión',
+      message: `¿Eliminar «${label}»? Se borrarán productos, participantes y asignaciones.`,
+      tone: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await ticketsApi.remove(ticket.id);
+      showSuccessToast('Sesión eliminada.');
+      setActionError(null);
+      await reload();
+    } catch (err) {
+      setActionError(err instanceof ApiClientError ? err.message : 'No se pudo eliminar la sesión.');
+    }
+  }
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center space-y-8 text-center">
@@ -43,9 +70,11 @@ export function HomePage() {
         Escanear ticket
       </button>
 
-      <Link to="/history" className="text-sm font-semibold text-primary hover:underline dark:text-primary-light">
-        Ver historial
-      </Link>
+      {actionError && (
+        <div className="w-full max-w-sm text-left">
+          <Alert tone="error">{actionError}</Alert>
+        </div>
+      )}
 
       {activeTickets.length > 0 && (
         <section className="w-full max-w-sm space-y-3 text-left">
@@ -55,18 +84,32 @@ export function HomePage() {
           <ul className="space-y-2">
             {activeTickets.map((ticket) => (
               <li key={ticket.id}>
-                <button
-                  type="button"
-                  className="card w-full p-4 text-left transition hover:border-primary/40"
-                  onClick={() => navigate(`/tickets/${ticket.id}/control`)}
+                <SwipeToDeleteRow
+                  onDelete={() => void handleDeleteSession(ticket)}
+                  desktopDelete={
+                    <button
+                      type="button"
+                      className="btn-danger btn-sm shrink-0 self-center mr-3 touch-target"
+                      aria-label={`Eliminar sesión ${ticket.restaurantName || ticket.title}`}
+                      onClick={() => void handleDeleteSession(ticket)}
+                    >
+                      Eliminar
+                    </button>
+                  }
                 >
-                  <p className="font-semibold text-foreground dark:text-white">
-                    {ticket.restaurantName || ticket.title}
-                  </p>
-                  <p className="mt-1 text-xs text-foreground-muted dark:text-slate-400">
-                    {ticket.shareCode} · {formatMoney(ticket.total)}
-                  </p>
-                </button>
+                  <button
+                    type="button"
+                    className="w-full p-4 text-left transition hover:bg-surface-muted/50 dark:hover:bg-slate-800/30"
+                    onClick={() => navigate(`/tickets/${ticket.id}/control`)}
+                  >
+                    <p className="font-semibold text-foreground dark:text-white">
+                      {ticket.restaurantName || ticket.title}
+                    </p>
+                    <p className="mt-1 text-xs text-foreground-muted dark:text-slate-400">
+                      {ticket.shareCode} · {formatMoney(ticket.total)}
+                    </p>
+                  </button>
+                </SwipeToDeleteRow>
               </li>
             ))}
           </ul>
