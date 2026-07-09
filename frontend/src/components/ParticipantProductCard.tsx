@@ -1,5 +1,7 @@
-import type { PublicProduct } from '../types/domain';
+import type { PublicProduct, PublicProductAssignee } from '../types/domain';
 import { avatarEmoji } from '../constants/avatars';
+import { AppIcon } from './AppIcon';
+import { faCheck, faCircle } from '../icons';
 import { formatMoney } from '../utils/money';
 
 type ParticipantProductCardProps = {
@@ -8,6 +10,36 @@ type ParticipantProductCardProps = {
   disabled?: boolean;
   onToggle: () => void;
 };
+
+/** Lista de participantes asignados al producto (nombre + avatar). */
+function ProductAssigneeList({
+  assignees,
+  isShared,
+}: {
+  assignees: PublicProductAssignee[];
+  isShared: boolean;
+}) {
+  if (!assignees.length) return null;
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      <p className="text-xs text-foreground-muted dark:text-slate-400">
+        {isShared ? 'Compartido entre:' : 'Seleccionado por:'}
+      </p>
+      <ul className="space-y-1">
+        {assignees.map((assignee) => (
+          <li
+            key={assignee.participantId}
+            className="flex items-center gap-2 text-xs text-foreground dark:text-slate-200"
+          >
+            <span className="min-w-0 truncate">{assignee.displayName}</span>
+            <ParticipantAvatarBadge avatarId={assignee.avatarId} size="sm" plain />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export function ParticipantProductCard({
   product,
@@ -49,20 +81,19 @@ export function ParticipantProductCard({
           <p className="mt-1 text-sm font-bold text-primary dark:text-primary-light">
             {formatMoney(product.unitPrice)}
           </p>
-          {product.assignees.length > 0 && (
-            <p className="mt-2 text-xs text-foreground-muted dark:text-slate-400">
-              {product.isShared ? 'Compartido entre: ' : 'Seleccionado por: '}
-              {product.assignees.map((a) => a.displayName).join(', ')}
-            </p>
-          )}
+          <ProductAssigneeList assignees={product.assignees} isShared={product.isShared} />
         </div>
         <span
           className={[
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg',
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
             selected ? 'bg-primary text-white' : 'border border-border dark:border-slate-700',
           ].join(' ')}
         >
-          {selected ? '✓' : '○'}
+          {selected ? (
+            <AppIcon icon={faCheck} size="sm" className="text-white" />
+          ) : (
+            <AppIcon icon={faCircle} size="sm" className="text-foreground-muted opacity-50" />
+          )}
         </span>
       </div>
     </button>
@@ -97,9 +128,27 @@ export function ParticipantMiniSummary({
   );
 }
 
-export function ParticipantAvatarBadge({ avatarId }: { avatarId: string | null }) {
+export function ParticipantAvatarBadge({
+  avatarId,
+  size = 'md',
+  plain = false,
+}: {
+  avatarId: string | null;
+  size?: 'sm' | 'md';
+  /** Sin fondo circular (lista de assignees). */
+  plain?: boolean;
+}) {
+  const sizeClass =
+    size === 'sm' ? 'h-6 w-6 shrink-0 text-base' : 'h-10 w-10 shrink-0 text-xl';
+
   return (
-    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-muted text-xl dark:bg-primary/20">
+    <span
+      className={[
+        'inline-flex items-center justify-center',
+        sizeClass,
+        plain ? '' : 'rounded-full bg-primary-muted dark:bg-primary/20',
+      ].join(' ')}
+    >
       {avatarEmoji(avatarId)}
     </span>
   );

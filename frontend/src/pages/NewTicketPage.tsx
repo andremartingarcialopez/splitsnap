@@ -1,11 +1,13 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert } from '../components/Alert';
+import { AppIcon } from '../components/AppIcon';
 import { PageHeader } from '../components/PageHeader';
 import { ScanProcessingOverlay } from '../components/ScanProcessingOverlay';
 import { TicketImageSourcePicker } from '../components/TicketImageSourcePicker';
 import { useTicketScanFlow } from '../hooks/useTicketScanFlow';
 import { ApiClientError, ticketsApi } from '../services/api';
+import { faImage } from '../icons';
 
 type ManualLine = { name: string; unitPrice: string };
 
@@ -71,19 +73,7 @@ export function NewTicketPage() {
         {!previewUrl ? (
           <div className="upload-zone w-full cursor-default">
             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary-muted dark:bg-primary/20">
-              <svg
-                className="h-7 w-7 text-primary dark:text-primary-light"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
+              <AppIcon icon={faImage} size="lg" className="text-primary dark:text-primary-light" />
             </div>
             <p className="font-semibold text-foreground dark:text-white">
               Escanea tu ticket

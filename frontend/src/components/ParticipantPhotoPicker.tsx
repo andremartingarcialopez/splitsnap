@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { AppIcon } from './AppIcon';
+import { faUser } from '../icons';
 import { resolveMediaUrl } from '../utils/mediaUrl';
 
 const ACCEPT = 'image/jpeg,image/jpg,image/png';
@@ -67,20 +69,7 @@ export function ParticipantPhotoPicker({
               className="h-full w-full object-cover"
             />
           ) : (
-            <svg
-              className="h-10 w-10 text-foreground-muted dark:text-slate-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              aria-hidden
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-              />
-            </svg>
+            <AppIcon icon={faUser} size="xl" className="text-foreground-muted dark:text-slate-500" />
           )}
         </div>
 

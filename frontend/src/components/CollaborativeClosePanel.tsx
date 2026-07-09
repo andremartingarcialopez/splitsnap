@@ -216,7 +216,11 @@ export function CollaborativeClosePanel({
                 {sessionStatus !== 'FINISHED' && (
                   <button
                     type="button"
-                    className={isPaid ? 'btn-secondary btn-sm' : 'btn-primary btn-sm'}
+                    className={
+                      isPaid
+                        ? 'btn-secondary btn-sm'
+                        : 'btn-sm min-h-[36px] rounded-pill border border-amber-200 bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-200 dark:border-amber-800/50 dark:bg-amber-950/50 dark:text-amber-200 dark:hover:bg-amber-950/70'
+                    }
                     disabled={busyId === tpId}
                     onClick={() => void togglePayment(tpId, p.paymentStatus)}
                   >

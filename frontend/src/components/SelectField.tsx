@@ -1,4 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { AppIcon } from './AppIcon';
+import { faCheck, faChevronDown } from '../icons';
 
 export type SelectOption = {
   value: string;
@@ -76,16 +78,11 @@ export function SelectField({
         <span className={hasValue ? 'truncate text-foreground dark:text-slate-100' : 'truncate text-[#6B7280] dark:text-slate-500'}>
           {displayLabel}
         </span>
-        <svg
-          className={`h-4 w-4 shrink-0 text-[#6B7280] transition-transform dark:text-slate-400 ${open ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
+        <AppIcon
+          icon={faChevronDown}
+          size="sm"
+          className={`text-[#6B7280] transition-transform dark:text-slate-400 ${open ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {open && (
@@ -121,9 +118,7 @@ export function SelectField({
                   >
                     <span className="truncate">{option.label}</span>
                     {isSelected && (
-                      <svg className="h-4 w-4 shrink-0 text-primary dark:text-primary-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
+                      <AppIcon icon={faCheck} size="sm" className="text-primary dark:text-primary-light" />
                     )}
                   </button>
                 </li>

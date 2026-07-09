@@ -1,0 +1,20 @@
+/** Iconos Font Awesome Free (solid) usados en la app. */
+export {
+  faCamera,
+  faCheck,
+  faChevronDown,
+  faChevronLeft,
+  faCircle,
+  faClipboardList,
+  faClock,
+  faEllipsis,
+  faHouse,
+  faImage,
+  faMoon,
+  faPlus,
+  faSun,
+  faTrashCan,
+  faUser,
+  faUtensils,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons';

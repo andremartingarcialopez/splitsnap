@@ -6,7 +6,7 @@ type AlertProps = {
 const toneClass: Record<NonNullable<AlertProps['tone']>, string> = {
   error:
     'border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300',
-  info: 'border-green-200 bg-primary-muted text-green-900 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-200',
+  info: 'border-rose-200 bg-primary-muted text-rose-900 dark:border-rose-500/30 dark:bg-rose-950/40 dark:text-rose-200',
   success:
     'border-emerald-200 bg-success-light text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300',
   warning:

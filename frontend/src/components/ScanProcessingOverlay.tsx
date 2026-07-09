@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { AppIcon } from './AppIcon';
+import { faCamera, faCheck, faCircle, faEllipsis } from '../icons';
 
 const STEPS = [
   { id: 'ocr', label: 'Detectando texto', delayMs: 800 },
@@ -29,10 +31,10 @@ export function ScanProcessingOverlay({ active }: ScanProcessingOverlayProps) {
   if (!active) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#15121f]/60 p-4 backdrop-blur-lg backdrop-saturate-150">
       <div className="card w-full max-w-md space-y-6 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary-muted text-3xl dark:bg-primary/20">
-          📷
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary-muted dark:bg-primary/20">
+          <AppIcon icon={faCamera} size="xl" className="text-primary dark:text-primary-light" />
         </div>
         <div>
           <h2 className="text-xl font-bold text-foreground dark:text-white">
@@ -58,8 +60,14 @@ export function ScanProcessingOverlay({ active }: ScanProcessingOverlayProps) {
                     : 'text-foreground-muted dark:text-slate-400',
                 ].join(' ')}
               >
-                <span className="w-5 shrink-0 text-center">
-                  {done ? '✔' : current ? '…' : '○'}
+                <span className="flex w-5 shrink-0 justify-center">
+                  {done ? (
+                    <AppIcon icon={faCheck} size="sm" />
+                  ) : current ? (
+                    <AppIcon icon={faEllipsis} size="sm" />
+                  ) : (
+                    <AppIcon icon={faCircle} size="xs" className="opacity-40" />
+                  )}
                 </span>
                 <span>{step.label}</span>
               </li>

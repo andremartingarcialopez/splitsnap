@@ -36,8 +36,8 @@ export function ParticipantConsumptionModal({
 
   return (
     <Modal open={open} title={displayName} onClose={onClose}>
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <span className="text-2xl" aria-hidden>
             {avatarEmoji(meta?.avatarId)}
           </span>
@@ -53,14 +53,16 @@ export function ParticipantConsumptionModal({
           </span>
         </div>
 
-        <div>
-          <h3 className="mb-2 text-sm font-semibold text-foreground dark:text-white">Consumo</h3>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <h3 className="mb-2 shrink-0 text-sm font-semibold text-foreground dark:text-white">
+            Consumo
+          </h3>
           {lines.length === 0 ? (
             <p className="text-sm text-foreground-muted dark:text-slate-400">
               Sin productos asignados.
             </p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-0.5">
               {lines.map((line) => (
                 <li
                   key={line.productId}
@@ -79,7 +81,7 @@ export function ParticipantConsumptionModal({
           )}
         </div>
 
-        <dl className="space-y-1.5 border-t border-border pt-3 text-sm dark:border-slate-800">
+        <dl className="shrink-0 space-y-1.5 border-t border-border pt-3 text-sm dark:border-slate-800">
           <div className="flex justify-between gap-4">
             <dt className="text-foreground-muted">Subtotal productos</dt>
             <dd>{formatMoney(participant.subtotal)}</dd>
@@ -111,7 +113,7 @@ export function ParticipantConsumptionModal({
         {sessionStatus !== 'FINISHED' && tpId && (
           <button
             type="button"
-            className={isPaid ? 'btn-secondary w-full' : 'btn-primary w-full'}
+            className={`shrink-0 ${isPaid ? 'btn-secondary w-full' : 'btn-primary w-full'}`}
             disabled={busyId === tpId}
             onClick={() => onTogglePayment(tpId, participant.paymentStatus)}
           >
