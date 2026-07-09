@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { AppIcon } from './AppIcon';
 import { ThemeToggle } from './ThemeToggle';
-import { faCamera, faClock, faHouse, faPlus } from '../icons';
+import { faClock, faHouse, faPlus, faUtensils } from '../icons';
 
 type NavItem = {
   to: string;
@@ -51,7 +51,7 @@ export function AppLayout() {
         <div className="flex items-center justify-between gap-2 px-5 py-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-white shadow-glow-sm">
-              <AppIcon icon={faCamera} className="text-white" />
+              <AppIcon icon={faUtensils} className="text-white" />
             </div>
             <div>
               <p className="text-base font-bold text-foreground dark:text-white">SplitSnap</p>
@@ -83,7 +83,7 @@ export function AppLayout() {
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-glow-sm">
-                <AppIcon icon={faCamera} size="sm" className="text-white" />
+                <AppIcon icon={faUtensils} size="sm" className="text-white" />
               </div>
               <span className="text-base font-bold text-foreground dark:text-white">SplitSnap</span>
             </div>

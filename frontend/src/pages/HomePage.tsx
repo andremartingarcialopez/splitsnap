@@ -13,7 +13,7 @@ import { ApiClientError, ticketsApi } from '../services/api';
 import type { Ticket } from '../types/domain';
 import { formatMoney } from '../utils/money';
 import { showSuccessToast } from '../utils/toast';
-import { faCamera } from '../icons';
+import { faUtensils } from '../icons';
 
 const ACTIVE_STATUSES = new Set([
   'WAITING_FOR_PARTICIPANTS',
@@ -116,7 +116,7 @@ export function HomePage() {
 
       <div className="space-y-3">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-primary text-white shadow-glow">
-          <AppIcon icon={faCamera} size="2xl" className="text-white" />
+          <AppIcon icon={faUtensils} size="2xl" className="text-white" />
         </div>
         <h1 className="text-3xl font-bold text-foreground dark:text-white">SplitSnap</h1>
         <p className="text-foreground-muted dark:text-slate-400">
