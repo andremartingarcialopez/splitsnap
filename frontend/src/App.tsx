@@ -11,10 +11,12 @@ import { TicketDetailPage } from './pages/TicketDetailPage';
 import { TicketReviewPage } from './pages/TicketReviewPage';
 import { TicketSharePage } from './pages/TicketSharePage';
 import { TicketsPage } from './pages/TicketsPage';
+import { PublicTicketPage } from './pages/PublicTicketPage';
 
 export default function App() {
   return (
     <Routes>
+      <Route path="ticket/:shareCode" element={<PublicTicketPage />} />
       <Route element={<AppLayout />}>
         <Route index element={<HomePage />} />
         <Route path="scan" element={<NewTicketPage />} />

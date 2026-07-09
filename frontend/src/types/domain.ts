@@ -171,3 +171,77 @@ export type ShareInfo = {
   globalTipPercentage: number | null;
   publicPath: string;
 };
+
+export type PublicProductAssignee = {
+  participantId: string;
+  displayName: string;
+  avatarId: string | null;
+};
+
+export type PublicProduct = {
+  id: string;
+  name: string;
+  unitPrice: number;
+  emoji: string | null;
+  isIndivisible: boolean;
+  assignmentCount: number;
+  isShared: boolean;
+  assignees: PublicProductAssignee[];
+};
+
+export type PublicParticipant = {
+  id: string;
+  displayName: string;
+  avatarId: string | null;
+  isAdmin: boolean;
+  sessionStatus: string;
+  paymentStatus: string;
+  selectionSubmittedAt: string | null;
+};
+
+export type PublicTicket = {
+  id: string;
+  shareCode: string | null;
+  title: string;
+  restaurantName: string | null;
+  sessionStatus: string;
+  processingStatus: string;
+  subtotal: number | null;
+  tax: number | null;
+  total: number | null;
+  globalTipPercentage: number | null;
+  expectedParticipantCount: number | null;
+  productCount: number;
+  participantCount: number;
+  completedParticipantCount: number;
+  isFinalized: boolean;
+  invitedBy: string;
+  products: PublicProduct[];
+  participants: PublicParticipant[];
+};
+
+export type ParticipantSession = {
+  ticketParticipantId: string;
+  participantId: string;
+  displayName: string;
+  avatarId: string | null;
+  sessionStatus: string;
+  selectionSubmittedAt: string | null;
+  selectedProductIds: string[];
+  selectedProducts: Array<{
+    id: string;
+    name: string;
+    unitPrice: number;
+    emoji: string | null;
+  }>;
+  subtotal: number;
+  tipPercentage: number;
+  tip: number;
+  total: number;
+  canEdit: boolean;
+};
+
+export type PublicSessionResponse = {
+  ticket: PublicTicket;
+  session: ParticipantSession;
+};

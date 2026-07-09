@@ -5,6 +5,7 @@ import { generateShareCode } from '../../utils/shareCode';
 import type {
   AdminSetupInput,
   CollaborationSettingsInput,
+  PublicJoinInput,
   StartDivisionInput,
 } from '../../validators/collaboration.validator';
 import {
@@ -12,6 +13,7 @@ import {
   PAYMENT_STATUS,
   TICKET_SESSION_STATUS,
 } from './collaboration.types';
+import { assignmentService } from '../assignment/assignment.service';
 
 const ACTIVE_SHARE_STATUSES = new Set<string>([
   TICKET_SESSION_STATUS.WAITING_FOR_PARTICIPANTS,
@@ -35,6 +37,201 @@ async function uniqueShareCode(): Promise<string> {
     if (!existing) return code;
   }
   throw new AppError('Could not generate share code', 'INTERNAL_ERROR', 500);
+}
+
+const JOINABLE_TICKET_STATUSES = new Set<string>([
+  TICKET_SESSION_STATUS.WAITING_FOR_PARTICIPANTS,
+  TICKET_SESSION_STATUS.IN_PROGRESS,
+  TICKET_SESSION_STATUS.REVIEWING,
+  TICKET_SESSION_STATUS.REOPENED,
+]);
+
+const ticketPublicInclude = {
+  products: {
+    orderBy: { createdAt: 'asc' as const },
+    include: {
+      assignments: {
+        include: { participant: true },
+        orderBy: { createdAt: 'asc' as const },
+      },
+    },
+  },
+  ticketParticipants: {
+    include: { participant: true },
+    orderBy: { createdAt: 'asc' as const },
+  },
+} satisfies Prisma.TicketInclude;
+
+type TicketPublicPayload = Prisma.TicketGetPayload<{ include: typeof ticketPublicInclude }>;
+
+async function loadTicketByShareCode(shareCode: string): Promise<TicketPublicPayload> {
+  const ticket = await prisma.ticket.findUnique({
+    where: { shareCode },
+    include: ticketPublicInclude,
+  });
+  if (!ticket) {
+    throw new AppError('Ticket not found', 'NOT_FOUND', 404);
+  }
+  return ticket;
+}
+
+function assertTicketJoinable(ticket: TicketPublicPayload) {
+  if (ticket.finalizedAt) {
+    throw new AppError('Ticket is finalized', 'VALIDATION_ERROR', 409);
+  }
+  if (ticket.sessionStatus === TICKET_SESSION_STATUS.CANCELLED) {
+    throw new AppError('Ticket was cancelled', 'VALIDATION_ERROR', 409);
+  }
+  if (!JOINABLE_TICKET_STATUSES.has(ticket.sessionStatus)) {
+    throw new AppError(
+      `Ticket is not open for participants (${ticket.sessionStatus})`,
+      'VALIDATION_ERROR',
+      400,
+    );
+  }
+}
+
+function participantMetaByParticipantId(ticket: TicketPublicPayload) {
+  return new Map(
+    ticket.ticketParticipants.map((tp) => [
+      tp.participantId,
+      {
+        displayName: tp.displayName ?? tp.participant.name ?? 'Participante',
+        avatarId: tp.avatarId,
+        isAdmin: tp.isAdmin,
+      },
+    ]),
+  );
+}
+
+function serializePublicTicket(ticket: TicketPublicPayload) {
+  const meta = participantMetaByParticipantId(ticket);
+  const admin = ticket.ticketParticipants.find((tp) => tp.isAdmin);
+  const completedCount = ticket.ticketParticipants.filter(
+    (tp) => tp.sessionStatus === PARTICIPANT_SESSION_STATUS.COMPLETED,
+  ).length;
+
+  return {
+    id: ticket.id,
+    shareCode: ticket.shareCode,
+    title: ticket.title,
+    restaurantName: ticket.restaurantName,
+    sessionStatus: ticket.sessionStatus,
+    processingStatus: ticket.processingStatus,
+    subtotal: ticket.subtotal != null ? Number(ticket.subtotal) : null,
+    tax: ticket.tax != null ? Number(ticket.tax) : null,
+    total: ticket.total != null ? Number(ticket.total) : null,
+    globalTipPercentage:
+      ticket.globalTipPercentage != null ? Number(ticket.globalTipPercentage) : null,
+    expectedParticipantCount: ticket.expectedParticipantCount,
+    productCount: ticket.products.length,
+    participantCount: ticket.ticketParticipants.length,
+    completedParticipantCount: completedCount,
+    isFinalized: Boolean(ticket.finalizedAt),
+    invitedBy: admin?.displayName ?? admin?.participant.name ?? 'El anfitrión',
+    products: ticket.products.map((p) => {
+      const assignees = p.assignments.map((a) => {
+        const m = meta.get(a.participantId);
+        return {
+          participantId: a.participantId,
+          displayName: m?.displayName ?? a.participant.name ?? 'Participante',
+          avatarId: m?.avatarId ?? null,
+        };
+      });
+      return {
+        id: p.id,
+        name: p.name,
+        unitPrice: Number(p.unitPrice),
+        emoji: p.emoji,
+        isIndivisible: p.isIndivisible,
+        assignmentCount: p.assignments.length,
+        isShared: p.assignments.length > 1,
+        assignees,
+      };
+    }),
+    participants: ticket.ticketParticipants.map((tp) => ({
+      id: tp.id,
+      displayName: tp.displayName ?? tp.participant.name ?? 'Participante',
+      avatarId: tp.avatarId,
+      isAdmin: tp.isAdmin,
+      sessionStatus: tp.sessionStatus,
+      paymentStatus: tp.paymentStatus,
+      selectionSubmittedAt: tp.selectionSubmittedAt,
+    })),
+  };
+}
+
+function serializeParticipantSession(
+  ticket: TicketPublicPayload,
+  ticketParticipantId: string,
+) {
+  const tp = ticket.ticketParticipants.find((t) => t.id === ticketParticipantId);
+  if (!tp) {
+    throw new AppError('Participant session not found', 'NOT_FOUND', 404);
+  }
+
+  const selectedProductIds = ticket.products
+    .filter((p) => p.assignments.some((a) => a.participantId === tp.participantId))
+    .map((p) => p.id);
+
+  const selectedProducts = ticket.products
+    .filter((p) => selectedProductIds.includes(p.id))
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      unitPrice: Number(p.unitPrice),
+      emoji: p.emoji,
+    }));
+
+  const subtotal = selectedProducts.reduce((sum, p) => sum + p.unitPrice, 0);
+  const tipPct =
+    ticket.globalTipPercentage != null ? Number(ticket.globalTipPercentage) : 0;
+  const tip = subtotal * (tipPct / 100);
+
+  return {
+    ticketParticipantId: tp.id,
+    participantId: tp.participantId,
+    displayName: tp.displayName ?? tp.participant.name ?? 'Participante',
+    avatarId: tp.avatarId,
+    sessionStatus: tp.sessionStatus,
+    selectionSubmittedAt: tp.selectionSubmittedAt,
+    selectedProductIds,
+    selectedProducts,
+    subtotal,
+    tipPercentage: tipPct,
+    tip,
+    total: subtotal + tip,
+    canEdit:
+      tp.sessionStatus !== PARTICIPANT_SESSION_STATUS.COMPLETED ||
+      ticket.sessionStatus === TICKET_SESSION_STATUS.REOPENED,
+  };
+}
+
+async function maybePromoteToInProgress(ticketId: string) {
+  const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+  if (ticket?.sessionStatus === TICKET_SESSION_STATUS.WAITING_FOR_PARTICIPANTS) {
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { sessionStatus: TICKET_SESSION_STATUS.IN_PROGRESS },
+    });
+  }
+}
+
+async function maybePromoteToReviewing(ticketId: string) {
+  const participants = await prisma.ticketParticipant.findMany({
+    where: { ticketId },
+    select: { sessionStatus: true },
+  });
+  if (participants.length === 0) return;
+  const allDone = participants.every(
+    (p) => p.sessionStatus === PARTICIPANT_SESSION_STATUS.COMPLETED,
+  );
+  if (allDone) {
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { sessionStatus: TICKET_SESSION_STATUS.REVIEWING },
+    });
+  }
 }
 
 function buildPublicPath(shareCode: string): string {
@@ -291,64 +488,181 @@ export class CollaborationService {
     };
   }
 
-  /** Vista pública por código (sin auth) — base Fase 1. */
+  /** Vista pública por código (sin auth). */
   async getPublicByShareCode(shareCode: string) {
-    const ticket = await prisma.ticket.findUnique({
-      where: { shareCode },
-      include: {
-        products: {
-          orderBy: { createdAt: 'asc' },
-          include: { _count: { select: { assignments: true } } },
+    const ticket = await loadTicketByShareCode(shareCode);
+    return serializePublicTicket(ticket);
+  }
+
+  /** Unirse o reanudar sesión de participante. */
+  async joinSession(shareCode: string, input: PublicJoinInput = {}) {
+    const ticket = await loadTicketByShareCode(shareCode);
+    assertTicketJoinable(ticket);
+
+    if (input.ticketParticipantId) {
+      const existing = ticket.ticketParticipants.find(
+        (tp) => tp.id === input.ticketParticipantId,
+      );
+      if (!existing) {
+        throw new AppError('Participant session not found', 'NOT_FOUND', 404);
+      }
+
+      if (existing.sessionStatus === PARTICIPANT_SESSION_STATUS.COMPLETED) {
+        return {
+          ticket: serializePublicTicket(ticket),
+          session: serializeParticipantSession(ticket, existing.id),
+        };
+      }
+
+      await prisma.ticketParticipant.update({
+        where: { id: existing.id },
+        data: {
+          sessionStatus: PARTICIPANT_SESSION_STATUS.CONNECTED,
+          ...(input.avatarId ? { avatarId: input.avatarId } : {}),
+          ...(input.displayName ? { displayName: input.displayName } : {}),
         },
-        ticketParticipants: {
-          include: { participant: true },
-          orderBy: { createdAt: 'asc' },
-        },
+      });
+      await maybePromoteToInProgress(ticket.id);
+
+      const refreshed = await loadTicketByShareCode(shareCode);
+      return {
+        ticket: serializePublicTicket(refreshed),
+        session: serializeParticipantSession(refreshed, existing.id),
+      };
+    }
+
+    const displayName =
+      input.displayName?.trim() || `Participante ${ticket.ticketParticipants.length + 1}`;
+
+    const participant = await prisma.participant.create({
+      data: { name: displayName },
+    });
+
+    const created = await prisma.ticketParticipant.create({
+      data: {
+        ticketId: ticket.id,
+        participantId: participant.id,
+        displayName,
+        avatarId: input.avatarId ?? null,
+        sessionStatus: PARTICIPANT_SESSION_STATUS.CONNECTED,
+        paymentStatus: PAYMENT_STATUS.PENDING,
       },
     });
 
-    if (!ticket) {
-      throw new AppError('Ticket not found', 'NOT_FOUND', 404);
+    await maybePromoteToInProgress(ticket.id);
+
+    const refreshed = await loadTicketByShareCode(shareCode);
+    return {
+      ticket: serializePublicTicket(refreshed),
+      session: serializeParticipantSession(refreshed, created.id),
+    };
+  }
+
+  /** Vista de participante con selección actual. */
+  async getParticipantSession(shareCode: string, ticketParticipantId: string) {
+    const ticket = await loadTicketByShareCode(shareCode);
+    return {
+      ticket: serializePublicTicket(ticket),
+      session: serializeParticipantSession(ticket, ticketParticipantId),
+    };
+  }
+
+  /** Alternar producto en la selección del participante. */
+  async toggleProductSelection(
+    shareCode: string,
+    ticketParticipantId: string,
+    productId: string,
+  ) {
+    const ticket = await loadTicketByShareCode(shareCode);
+    assertTicketJoinable(ticket);
+
+    const tp = ticket.ticketParticipants.find((p) => p.id === ticketParticipantId);
+    if (!tp) {
+      throw new AppError('Participant session not found', 'NOT_FOUND', 404);
     }
 
-    const completedCount = ticket.ticketParticipants.filter(
-      (tp) => tp.sessionStatus === PARTICIPANT_SESSION_STATUS.COMPLETED,
-    ).length;
+    const locked =
+      tp.sessionStatus === PARTICIPANT_SESSION_STATUS.COMPLETED &&
+      ticket.sessionStatus !== TICKET_SESSION_STATUS.REOPENED;
+    if (locked) {
+      throw new AppError(
+        'Selection already submitted and cannot be changed',
+        'VALIDATION_ERROR',
+        409,
+      );
+    }
 
+    const product = ticket.products.find((p) => p.id === productId);
+    if (!product) {
+      throw new AppError('Product not found on this ticket', 'NOT_FOUND', 404);
+    }
+
+    const existing = product.assignments.find((a) => a.participantId === tp.participantId);
+    if (existing) {
+      await assignmentService.remove(existing.id);
+    } else {
+      await assignmentService.assignOne({
+        productId,
+        participantId: tp.participantId,
+        shareRatio: 1,
+      });
+    }
+
+    if (ticket.sessionStatus === TICKET_SESSION_STATUS.REOPENED) {
+      await prisma.ticketParticipant.update({
+        where: { id: tp.id },
+        data: {
+          sessionStatus: PARTICIPANT_SESSION_STATUS.SELECTING,
+          selectionSubmittedAt: null,
+        },
+      });
+    } else {
+      await prisma.ticketParticipant.update({
+        where: { id: tp.id },
+        data: { sessionStatus: PARTICIPANT_SESSION_STATUS.SELECTING },
+      });
+    }
+
+    await maybePromoteToInProgress(ticket.id);
+
+    const refreshed = await loadTicketByShareCode(shareCode);
     return {
-      id: ticket.id,
-      shareCode: ticket.shareCode,
-      title: ticket.title,
-      restaurantName: ticket.restaurantName,
-      sessionStatus: ticket.sessionStatus,
-      processingStatus: ticket.processingStatus,
-      subtotal: ticket.subtotal != null ? Number(ticket.subtotal) : null,
-      tax: ticket.tax != null ? Number(ticket.tax) : null,
-      total: ticket.total != null ? Number(ticket.total) : null,
-      globalTipPercentage:
-        ticket.globalTipPercentage != null ? Number(ticket.globalTipPercentage) : null,
-      expectedParticipantCount: ticket.expectedParticipantCount,
-      productCount: ticket.products.length,
-      participantCount: ticket.ticketParticipants.length,
-      completedParticipantCount: completedCount,
-      isFinalized: Boolean(ticket.finalizedAt),
-      products: ticket.products.map((p) => ({
-        id: p.id,
-        name: p.name,
-        unitPrice: Number(p.unitPrice),
-        emoji: p.emoji,
-        isIndivisible: p.isIndivisible,
-        assignmentCount: p._count.assignments,
-      })),
-      participants: ticket.ticketParticipants.map((tp) => ({
-        id: tp.id,
-        displayName: tp.displayName ?? tp.participant.name ?? 'Participante',
-        avatarId: tp.avatarId,
-        isAdmin: tp.isAdmin,
-        sessionStatus: tp.sessionStatus,
-        paymentStatus: tp.paymentStatus,
-        selectionSubmittedAt: tp.selectionSubmittedAt,
-      })),
+      ticket: serializePublicTicket(refreshed),
+      session: serializeParticipantSession(refreshed, ticketParticipantId),
+    };
+  }
+
+  /** Confirmar selección del participante. */
+  async submitSelection(shareCode: string, ticketParticipantId: string) {
+    const ticket = await loadTicketByShareCode(shareCode);
+    assertTicketJoinable(ticket);
+
+    const tp = ticket.ticketParticipants.find((p) => p.id === ticketParticipantId);
+    if (!tp) {
+      throw new AppError('Participant session not found', 'NOT_FOUND', 404);
+    }
+
+    if (
+      tp.sessionStatus === PARTICIPANT_SESSION_STATUS.COMPLETED &&
+      ticket.sessionStatus !== TICKET_SESSION_STATUS.REOPENED
+    ) {
+      throw new AppError('Selection already submitted', 'VALIDATION_ERROR', 409);
+    }
+
+    await prisma.ticketParticipant.update({
+      where: { id: tp.id },
+      data: {
+        sessionStatus: PARTICIPANT_SESSION_STATUS.COMPLETED,
+        selectionSubmittedAt: new Date(),
+      },
+    });
+
+    await maybePromoteToReviewing(ticket.id);
+
+    const refreshed = await loadTicketByShareCode(shareCode);
+    return {
+      ticket: serializePublicTicket(refreshed),
+      session: serializeParticipantSession(refreshed, ticketParticipantId),
     };
   }
 }

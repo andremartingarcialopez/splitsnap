@@ -21,6 +21,19 @@ export type StartDivisionInput = z.infer<typeof startDivisionSchema>;
 export type AdminSetupInput = z.infer<typeof adminSetupSchema>;
 export type CollaborationSettingsInput = z.infer<typeof collaborationSettingsSchema>;
 
+export const publicJoinSchema = z.object({
+  displayName: z.string().trim().min(1).max(100).optional(),
+  avatarId: z.string().trim().min(1).max(50).optional(),
+  ticketParticipantId: z.string().uuid().optional(),
+});
+
+export const publicToggleProductSchema = z.object({
+  productId: z.string().uuid(),
+});
+
+export type PublicJoinInput = z.infer<typeof publicJoinSchema>;
+export type PublicToggleProductInput = z.infer<typeof publicToggleProductSchema>;
+
 export const shareCodeParamSchema = z.object({
   shareCode: z
     .string()
