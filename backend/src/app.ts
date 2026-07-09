@@ -11,6 +11,7 @@ import { ticketRouter } from './routes/tickets.routes';
 import { productRouter } from './routes/products.routes';
 import { assignmentRouter } from './routes/assignments.routes';
 import { historyRouter } from './routes/history.routes';
+import { publicRouter } from './routes/public.routes';
 import { errorHandler } from './middleware/errorHandler';
 import { securityMiddleware } from './middleware/security';
 import { apiRateLimit } from './middleware/rateLimit';
@@ -41,6 +42,7 @@ export function createApp() {
   app.use('/api/v1/products', productRouter);
   app.use('/api/v1/assignments', assignmentRouter);
   app.use('/api/v1/history', historyRouter);
+  app.use('/api/v1/public', publicRouter);
 
   app.use(errorHandler);
 

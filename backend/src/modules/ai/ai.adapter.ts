@@ -11,19 +11,26 @@ const geminiBreaker = new CircuitBreaker({ name: 'gemini' });
 const SYSTEM_PROMPT = `Eres un extractor de tickets de restaurante en México. Devuelve SOLO JSON válido con esta forma:
 {
   "restaurantName": string|null,
-  "items": [{ "name": string, "unitPrice": number, "confidenceScore": number|null }],
+  "items": [{
+    "name": string,
+    "unitPrice": number,
+    "quantity": number,
+    "indivisible": boolean,
+    "confidenceScore": number|null
+  }],
   "subtotal": number|null,
   "tax": number|null,
   "discount": number|null,
   "total": number|null
 }
 Reglas:
-- unitPrice > 0 para cada item
+- Corrige nombres ilegibles del OCR (ej. HMBRG BBQ → Hamburguesa BBQ)
+- quantity: unidades de esa línea (default 1). Si el ticket dice "3 Cervezas $300", usa quantity=3 y unitPrice=300 (precio total de la línea)
+- indivisible=true solo para combos/paquetes que NO deben separarse (ej. Combo Familiar)
 - No inventes productos que no estén en el texto
 - Usa punto decimal (ej. 199.00)
 - Si hay propina en el ticket, inclúyela en el total pero NO como item
-- subtotal = suma de items (antes de impuestos/descuentos si el ticket lo separa)
-- total debe coincidir con el total impreso cuando esté visible`;
+- subtotal = suma de líneas antes de impuestos cuando el ticket lo indique`;
 
 function isRetryable(err: unknown): boolean {
   if (err instanceof AppError) {

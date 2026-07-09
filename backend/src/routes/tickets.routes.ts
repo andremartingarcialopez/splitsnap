@@ -34,6 +34,22 @@ ticketRouter.post('/:ticketId/calculate', (req, res, next) =>
   calculationController.calculate(req, res, next),
 );
 
+ticketRouter.post('/:id/start-division', (req, res, next) =>
+  ticketController.startDivision(req, res, next),
+);
+
+ticketRouter.post('/:id/admin-setup', (req, res, next) =>
+  ticketController.setupAdmin(req, res, next),
+);
+
+ticketRouter.patch('/:id/collaboration-settings', (req, res, next) =>
+  ticketController.updateCollaborationSettings(req, res, next),
+);
+
+ticketRouter.get('/:id/share', (req, res, next) =>
+  ticketController.getShareInfo(req, res, next),
+);
+
 ticketRouter.get('/:id', (req, res, next) =>
   ticketController.getById(req, res, next),
 );

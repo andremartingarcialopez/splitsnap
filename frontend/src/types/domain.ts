@@ -32,6 +32,9 @@ export type Product = {
   unitPrice: number;
   detectedByAI: boolean;
   confidenceScore: number | null;
+  lineGroupId?: string | null;
+  isIndivisible?: boolean;
+  emoji?: string | null;
   createdAt: string;
   assignments?: ProductAssignment[];
 };
@@ -41,7 +44,14 @@ export type TicketParticipantLink = {
   ticketId: string;
   participantId: string;
   individualTipPercentage: number | null;
+  sessionStatus?: string;
+  paymentStatus?: string;
+  isAdmin?: boolean;
+  avatarId?: string | null;
+  displayName?: string | null;
+  selectionSubmittedAt?: string | null;
   createdAt: string;
+  updatedAt?: string;
   participant: Participant;
 };
 
@@ -65,6 +75,10 @@ export type Ticket = {
   tipMode: string;
   globalTipPercentage: number | null;
   processingStatus: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | string;
+  sessionStatus?: string;
+  shareCode?: string | null;
+  expectedParticipantCount?: number | null;
+  divisionStartedAt?: string | null;
   failureReason?: string | null;
   rawOcrText?: string | null;
   finalizedAt?: string | null;
@@ -146,4 +160,14 @@ export type ApiFailure = {
     code: string;
     details: unknown;
   };
+};
+
+export type ShareInfo = {
+  ticketId: string;
+  shareCode: string;
+  sessionStatus: string;
+  divisionStartedAt: string | null;
+  expectedParticipantCount: number | null;
+  globalTipPercentage: number | null;
+  publicPath: string;
 };

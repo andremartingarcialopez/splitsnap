@@ -11,6 +11,8 @@ export interface OcrPort {
 export type ParsedTicketItem = {
   name: string;
   unitPrice: number;
+  quantity?: number;
+  indivisible?: boolean;
   confidenceScore?: number | null;
 };
 

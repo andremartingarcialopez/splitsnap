@@ -6,6 +6,8 @@ import type { ParsedTicket } from './ai.port';
 const itemSchema = z.object({
   name: z.string().trim().min(1).max(150),
   unitPrice: z.coerce.number().positive('unitPrice must be > 0'),
+  quantity: z.coerce.number().int().positive().optional().default(1),
+  indivisible: z.coerce.boolean().optional().default(false),
   confidenceScore: z.coerce.number().min(0).max(100).optional().nullable(),
 });
 
@@ -75,6 +77,8 @@ export function auditParsedTicket(raw: unknown): ParsedTicket {
     items: data.items.map((i) => ({
       name: i.name,
       unitPrice: i.unitPrice,
+      quantity: i.quantity ?? 1,
+      indivisible: i.indivisible ?? false,
       confidenceScore: i.confidenceScore ?? null,
     })),
     subtotal: data.subtotal ?? null,

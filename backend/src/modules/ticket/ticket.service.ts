@@ -2,11 +2,12 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../utils/AppError';
 import { aiService } from '../ai/ai.service';
-import type { ParsedTicket } from '../ai/ai.port';
 import { ocrService } from '../ocr/ocr.service';
 import type { OcrImageInput } from '../ocr/ocr.port';
 import type { CreateTicketInput } from '../../validators/ticket.validator';
 import { saveTicketImage } from './storage';
+import { normalizeParsedTicket } from '../ai/productNormalizer';
+import { TICKET_SESSION_STATUS } from '../collaboration/collaboration.types';
 import { calculationService } from '../calculation/calculation.service';
 
 function decimal(n: number | null | undefined): Prisma.Decimal | null {
@@ -42,6 +43,9 @@ function serializeProduct(p: TicketDetail['products'][number]) {
     unitPrice: Number(p.unitPrice),
     detectedByAI: p.detectedByAI,
     confidenceScore: p.confidenceScore != null ? Number(p.confidenceScore) : null,
+    lineGroupId: p.lineGroupId,
+    isIndivisible: p.isIndivisible,
+    emoji: p.emoji,
     createdAt: p.createdAt,
     assignments: p.assignments.map((a) => ({
       id: a.id,
@@ -68,6 +72,10 @@ function serializeTicketDetail(ticket: TicketDetail) {
     globalTipPercentage:
       ticket.globalTipPercentage != null ? Number(ticket.globalTipPercentage) : null,
     processingStatus: ticket.processingStatus,
+    sessionStatus: ticket.sessionStatus,
+    shareCode: ticket.shareCode,
+    expectedParticipantCount: ticket.expectedParticipantCount,
+    divisionStartedAt: ticket.divisionStartedAt,
     failureReason: ticket.failureReason,
     rawOcrText: ticket.rawOcrText,
     finalizedAt: ticket.finalizedAt,
@@ -80,7 +88,14 @@ function serializeTicketDetail(ticket: TicketDetail) {
       participantId: tp.participantId,
       individualTipPercentage:
         tp.individualTipPercentage != null ? Number(tp.individualTipPercentage) : null,
+      sessionStatus: tp.sessionStatus,
+      paymentStatus: tp.paymentStatus,
+      isAdmin: tp.isAdmin,
+      avatarId: tp.avatarId,
+      displayName: tp.displayName,
+      selectionSubmittedAt: tp.selectionSubmittedAt,
       createdAt: tp.createdAt,
+      updatedAt: tp.updatedAt,
       participant: tp.participant,
     })),
     groups: ticket.ticketGroups.map((tg) => ({
@@ -115,6 +130,8 @@ function serializeTicketListItem(
     globalTipPercentage:
       ticket.globalTipPercentage != null ? Number(ticket.globalTipPercentage) : null,
     processingStatus: ticket.processingStatus,
+    sessionStatus: ticket.sessionStatus,
+    shareCode: ticket.shareCode,
     failureReason: ticket.failureReason,
     createdAt: ticket.createdAt,
     updatedAt: ticket.updatedAt,
@@ -195,6 +212,9 @@ export class TicketService {
         tipMode: input.tipMode ?? 'GLOBAL',
         globalTipPercentage: decimal(input.globalTipPercentage),
         processingStatus: products.length ? 'COMPLETED' : 'PENDING',
+        sessionStatus: products.length
+          ? TICKET_SESSION_STATUS.CREATED
+          : TICKET_SESSION_STATUS.DRAFT,
         products: products.length
           ? {
               create: products.map((p) => ({
@@ -488,7 +508,8 @@ export class TicketService {
 
     try {
       const { cleaned, text } = await ocrService.extractFromImage(image);
-      const parsed: ParsedTicket = await aiService.parseTicket(cleaned);
+      const parsedRaw = await aiService.parseTicket(cleaned);
+      const parsed = normalizeParsedTicket(parsedRaw);
 
       const restaurant = parsed.restaurantName?.trim() || null;
       const title = restaurant || 'Ticket digitalizado';
@@ -505,10 +526,11 @@ export class TicketService {
             discount: decimal(parsed.discount ?? 0),
             total: decimal(parsed.total),
             processingStatus: 'COMPLETED',
+            sessionStatus: TICKET_SESSION_STATUS.CREATED,
             rawOcrText: text,
             failureReason: null,
             products: {
-              create: parsed.items.map((item) => ({
+              create: parsed.normalizedProducts.map((item) => ({
                 name: item.name,
                 unitPrice: decimal(item.unitPrice)!,
                 detectedByAI: true,
@@ -516,6 +538,8 @@ export class TicketService {
                   item.confidenceScore != null
                     ? new Prisma.Decimal(item.confidenceScore)
                     : null,
+                lineGroupId: item.lineGroupId,
+                isIndivisible: item.isIndivisible,
               })),
             },
           },

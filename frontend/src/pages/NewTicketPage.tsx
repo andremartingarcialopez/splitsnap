@@ -1,7 +1,8 @@
-import { FormEvent, useMemo, useRef, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert } from '../components/Alert';
 import { PageHeader } from '../components/PageHeader';
+import { ScanProcessingOverlay } from '../components/ScanProcessingOverlay';
 import { ApiClientError, ticketsApi } from '../services/api';
 
 type ManualLine = { name: string; unitPrice: string };
@@ -9,7 +10,6 @@ type ManualLine = { name: string; unitPrice: string };
 export function NewTicketPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,25 +20,23 @@ export function NewTicketPage() {
   const [lines, setLines] = useState<ManualLine[]>([{ name: '', unitPrice: '' }]);
   const [manualSaving, setManualSaving] = useState(false);
 
-  const canProcess = useMemo(() => Boolean(file) && !processing, [file, processing]);
-
   function onFileChange(next: File | null) {
+    if (!next) return;
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setFile(next);
-    setPreviewUrl(next ? URL.createObjectURL(next) : null);
+    setPreviewUrl(URL.createObjectURL(next));
     setError(null);
     setErrorCode(null);
     setFailedTicketId(null);
+    void processFile(next);
   }
 
-  async function handleProcess() {
-    if (!file) return;
+  async function processFile(file: File) {
     setProcessing(true);
     setError(null);
     setErrorCode(null);
     try {
       const result = await ticketsApi.process(file);
-      navigate(`/tickets/${result.ticket.id}`);
+      navigate(`/tickets/${result.ticket.id}/review`);
     } catch (err) {
       const apiErr = err instanceof ApiClientError ? err : null;
       setError(
@@ -77,7 +75,7 @@ export function NewTicketPage() {
         restaurantName: restaurantName.trim() || null,
         products,
       });
-      navigate(`/tickets/${ticket.id}`);
+      navigate(`/tickets/${ticket.id}/review`);
     } catch (err) {
       setError(
         err instanceof ApiClientError
@@ -91,9 +89,11 @@ export function NewTicketPage() {
 
   return (
     <div className="space-y-6">
+      <ScanProcessingOverlay active={processing} />
+
       <PageHeader
-        title="Nuevo ticket"
-        subtitle="Sube una foto legible (JPG/PNG ≤ 5 MB). OCR + IA extraerán los productos automáticamente."
+        title="Escanear ticket"
+        subtitle="Toma una foto o elige una imagen. El procesamiento comienza automáticamente."
       />
 
       <div className="card space-y-5">
@@ -102,6 +102,7 @@ export function NewTicketPage() {
           id="ticket-image"
           type="file"
           accept="image/jpeg,image/jpg,image/png"
+          capture="environment"
           className="sr-only"
           onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
           disabled={processing}
@@ -130,7 +131,7 @@ export function NewTicketPage() {
               </svg>
             </div>
             <p className="font-semibold text-foreground dark:text-white">
-              Toca para subir foto del ticket
+              Toca para tomar foto o subir imagen
             </p>
             <p className="mt-1 text-sm text-foreground-muted dark:text-slate-400">
               JPG o PNG · máximo 5 MB
@@ -156,31 +157,14 @@ export function NewTicketPage() {
           </div>
         )}
 
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            type="button"
-            className="btn-primary flex-1"
-            disabled={!canProcess}
-            onClick={() => void handleProcess()}
-          >
-            {processing ? 'Procesando OCR + IA…' : 'Procesar ticket'}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary flex-1"
-            onClick={() => setShowManual(true)}
-            disabled={processing}
-          >
-            Ingreso manual
-          </button>
-        </div>
-
-        {processing && (
-          <div className="flex items-center justify-center gap-3 rounded-2xl bg-primary-muted/50 py-4 text-sm text-primary dark:bg-primary/10 dark:text-primary-light">
-            <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            Digitalizando e interpretando el ticket…
-          </div>
-        )}
+        <button
+          type="button"
+          className="btn-secondary w-full"
+          onClick={() => setShowManual(true)}
+          disabled={processing}
+        >
+          Ingreso manual
+        </button>
       </div>
 
       {error && (
@@ -266,7 +250,7 @@ export function NewTicketPage() {
               Añadir producto
             </button>
             <button type="submit" className="btn-primary" disabled={manualSaving}>
-              {manualSaving ? 'Guardando…' : 'Guardar ticket manual'}
+              {manualSaving ? 'Guardando…' : 'Continuar a revisión'}
             </button>
           </div>
         </form>

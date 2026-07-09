@@ -42,8 +42,8 @@ export function TicketsPage() {
         title="Tickets"
         subtitle="Historial y gestión de cuentas digitalizadas."
         actions={
-          <Link to="/tickets/new" className="btn-primary w-full text-center sm:w-auto">
-            Nuevo ticket
+          <Link to="/scan" className="btn-primary w-full text-center sm:w-auto">
+            Escanear ticket
           </Link>
         }
       />
@@ -61,7 +61,7 @@ export function TicketsPage() {
           title="Aún no hay tickets"
           description="Digitaliza una foto o crea un ticket manual para empezar a dividir."
           actionLabel="Nuevo ticket"
-          onAction={() => navigate('/tickets/new')}
+          onAction={() => navigate('/scan')}
         />
       )}
 

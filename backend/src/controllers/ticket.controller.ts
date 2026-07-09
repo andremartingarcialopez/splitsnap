@@ -11,6 +11,12 @@ import {
   updateParticipantTipSchema,
   updateTicketTipSchema,
 } from '../validators/tip.validator';
+import { collaborationService } from '../modules/collaboration/collaboration.service';
+import {
+  adminSetupSchema,
+  collaborationSettingsSchema,
+  startDivisionSchema,
+} from '../validators/collaboration.validator';
 import { AppError } from '../utils/AppError';
 import { sendSuccess } from '../utils/response';
 
@@ -229,6 +235,51 @@ export class TicketController {
         req.params.productId,
       );
       sendSuccess(res, result, 'Product deleted');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async startDivision(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const body = startDivisionSchema.parse(req.body ?? {});
+      const share = await collaborationService.startDivision(req.params.id, body);
+      sendSuccess(res, share, 'Division started', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async setupAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const body = adminSetupSchema.parse(req.body ?? {});
+      await collaborationService.setupAdmin(req.params.id, body);
+      const ticket = await ticketService.getById(req.params.id);
+      sendSuccess(res, ticket, 'Admin configured');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updateCollaborationSettings(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const body = collaborationSettingsSchema.parse(req.body ?? {});
+      await collaborationService.updateCollaborationSettings(req.params.id, body);
+      const ticket = await ticketService.getById(req.params.id);
+      sendSuccess(res, ticket, 'Collaboration settings updated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getShareInfo(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const share = await collaborationService.getShareInfo(req.params.id);
+      sendSuccess(res, share, 'Share info');
     } catch (err) {
       next(err);
     }

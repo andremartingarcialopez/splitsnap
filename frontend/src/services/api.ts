@@ -7,6 +7,7 @@ import type {
   ProcessTicketResult,
   Product,
   RemoveParticipantResult,
+  ShareInfo,
   Ticket,
   TicketSummary,
 } from '../types/domain';
@@ -385,6 +386,66 @@ export const ticketsApi = {
       unwrap(data);
     } catch (err) {
       toClientError(err);
+    }
+  },
+
+  async setupAdmin(
+    ticketId: string,
+    input: { displayName: string; avatarId?: string },
+  ): Promise<Ticket> {
+    try {
+      const { data } = await api.post<ApiSuccess<Ticket>>(
+        `/tickets/${ticketId}/admin-setup`,
+        input,
+      );
+      return unwrap(data);
+    } catch (err) {
+      return toClientError(err);
+    }
+  },
+
+  async updateCollaborationSettings(
+    ticketId: string,
+    input: {
+      globalTipPercentage?: number;
+      expectedParticipantCount?: number | null;
+    },
+  ): Promise<Ticket> {
+    try {
+      const { data } = await api.patch<ApiSuccess<Ticket>>(
+        `/tickets/${ticketId}/collaboration-settings`,
+        input,
+      );
+      return unwrap(data);
+    } catch (err) {
+      return toClientError(err);
+    }
+  },
+
+  async startDivision(
+    ticketId: string,
+    input?: {
+      globalTipPercentage?: number;
+      expectedParticipantCount?: number;
+    },
+  ): Promise<ShareInfo> {
+    try {
+      const { data } = await api.post<ApiSuccess<ShareInfo>>(
+        `/tickets/${ticketId}/start-division`,
+        input ?? {},
+      );
+      return unwrap(data);
+    } catch (err) {
+      return toClientError(err);
+    }
+  },
+
+  async getShareInfo(ticketId: string): Promise<ShareInfo> {
+    try {
+      const { data } = await api.get<ApiSuccess<ShareInfo>>(`/tickets/${ticketId}/share`);
+      return unwrap(data);
+    } catch (err) {
+      return toClientError(err);
     }
   },
 };
