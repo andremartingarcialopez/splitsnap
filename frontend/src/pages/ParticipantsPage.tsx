@@ -138,6 +138,7 @@ export function ParticipantsPage() {
       <PageHeader
         title="Participantes"
         subtitle="Comensales con nombre y/o foto. No son usuarios del sistema."
+        backTo="/"
         actions={
           <button type="button" className="btn-primary w-full sm:w-auto" onClick={openCreate}>
             Nuevo participante

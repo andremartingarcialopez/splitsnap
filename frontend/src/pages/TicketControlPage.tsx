@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
+import { BackButton } from '../components/BackButton';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
 import { PageHeader } from '../components/PageHeader';
@@ -20,17 +21,32 @@ export function TicketControlPage() {
     void ticketsApi.getShareInfo(id).then(setShare).catch(() => setShare(null));
   }, [id, ticket?.shareCode]);
 
-  if (status === 'loading') return <LoadingState label="Cargando panel…" />;
+  if (status === 'loading') {
+    return (
+      <div className="space-y-4">
+        <BackButton to="/" className="-ml-2" />
+        <LoadingState label="Cargando panel…" />
+      </div>
+    );
+  }
   if (status === 'error' || !ticket) {
-    return <ErrorState message={error || 'Ticket no encontrado'} onRetry={() => void reload()} />;
+    return (
+      <div className="space-y-4">
+        <BackButton to="/" className="-ml-2" />
+        <ErrorState message={error || 'Ticket no encontrado'} onRetry={() => void reload()} />
+      </div>
+    );
   }
 
   if (!ticket.shareCode) {
     return (
-      <ErrorState
-        message="La división aún no ha iniciado"
-        onRetry={() => window.location.assign(`/tickets/${id}/review`)}
-      />
+      <div className="space-y-4">
+        <BackButton to={`/tickets/${id}/review`} className="-ml-2" />
+        <ErrorState
+          message="La división aún no ha iniciado"
+          onRetry={() => window.location.assign(`/tickets/${id}/review`)}
+        />
+      </div>
     );
   }
 
@@ -42,6 +58,7 @@ export function TicketControlPage() {
       <PageHeader
         title="Panel de control"
         subtitle={ticket.restaurantName || ticket.title}
+        backTo="/"
         actions={
           share ? (
             <Link to={`/tickets/${id}/share`} className="btn-secondary btn-sm">

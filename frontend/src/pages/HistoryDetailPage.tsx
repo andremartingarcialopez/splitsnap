@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
+import { BackButton } from '../components/BackButton';
 import { Spinner } from '../components/Spinner';
 import { ApiClientError, historyApi } from '../services/api';
 import type { HistoryDetail, Product, TicketParticipantLink } from '../types/domain';
@@ -38,18 +39,28 @@ export function HistoryDetailPage() {
     void load();
   }, [load]);
 
-  if (status === 'loading') return <Spinner label="Cargando detalle histórico…" />;
+  if (status === 'loading') {
+    return (
+      <div className="space-y-4">
+        <BackButton to="/history" className="-ml-2" />
+        <Spinner label="Cargando detalle histórico…" />
+      </div>
+    );
+  }
 
   if (status === 'error' || !detail) {
     return (
-      <Alert tone="error">
+      <div className="space-y-4">
+        <BackButton to="/history" className="-ml-2" />
+        <Alert tone="error">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span>{error || 'Ticket no encontrado en historial'}</span>
           <Link to="/history" className="btn-secondary text-center">
             Volver al historial
           </Link>
         </div>
-      </Alert>
+        </Alert>
+      </div>
     );
   }
 
@@ -59,6 +70,7 @@ export function HistoryDetailPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton to="/history" className="-ml-2" />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted">Histórico · solo lectura</p>

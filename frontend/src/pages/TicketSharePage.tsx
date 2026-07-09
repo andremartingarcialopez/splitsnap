@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
+import { BackButton } from '../components/BackButton';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
 import { PageHeader } from '../components/PageHeader';
@@ -43,19 +44,32 @@ export function TicketSharePage() {
   }, [id]);
 
   if (status === 'loading' || shareStatus === 'loading') {
-    return <LoadingState label="Preparando enlace…" />;
+    return (
+      <div className="space-y-4">
+        <BackButton onClick={() => navigate(-1)} className="-ml-2" />
+        <LoadingState label="Preparando enlace…" />
+      </div>
+    );
   }
 
   if (status === 'error' || !ticket) {
-    return <ErrorState message={error || 'Ticket no encontrado'} onRetry={() => void reload()} />;
+    return (
+      <div className="space-y-4">
+        <BackButton onClick={() => navigate(-1)} className="-ml-2" />
+        <ErrorState message={error || 'Ticket no encontrado'} onRetry={() => void reload()} />
+      </div>
+    );
   }
 
   if (shareStatus === 'error' || !share) {
     return (
-      <ErrorState
-        message={shareError || 'División no iniciada'}
-        onRetry={() => navigate(`/tickets/${id}/review`)}
-      />
+      <div className="space-y-4">
+        <BackButton onClick={() => navigate(-1)} className="-ml-2" />
+        <ErrorState
+          message={shareError || 'División no iniciada'}
+          onRetry={() => navigate(`/tickets/${id}/review`)}
+        />
+      </div>
     );
   }
 
@@ -64,6 +78,7 @@ export function TicketSharePage() {
       <PageHeader
         title="Compartir ticket"
         subtitle={ticket.restaurantName || ticket.title}
+        onBack={() => navigate(-1)}
       />
 
       <Alert tone="info">

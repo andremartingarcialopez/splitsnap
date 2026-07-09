@@ -41,6 +41,7 @@ export function TicketsPage() {
       <PageHeader
         title="Tickets"
         subtitle="Historial y gestión de cuentas digitalizadas."
+        backTo="/"
         actions={
           <Link to="/scan" className="btn-primary w-full text-center sm:w-auto">
             Escanear ticket

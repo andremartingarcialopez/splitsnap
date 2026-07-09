@@ -149,6 +149,7 @@ export function GroupsPage() {
       <PageHeader
         title="Mis grupos"
         subtitle="Conjuntos reutilizables de participantes para tus tickets."
+        backTo="/"
         actions={
           status === 'ready' && groups.length > 0 ? (
             <button type="button" className="btn-primary w-full sm:w-auto" onClick={openCreate}>

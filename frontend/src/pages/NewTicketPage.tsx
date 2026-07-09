@@ -94,6 +94,7 @@ export function NewTicketPage() {
       <PageHeader
         title="Escanear ticket"
         subtitle="Toma una foto o elige una imagen. El procesamiento comienza automáticamente."
+        backTo="/"
       />
 
       <div className="card space-y-5">
