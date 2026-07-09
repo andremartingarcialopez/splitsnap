@@ -11,9 +11,9 @@ import type {
   Ticket,
   TicketSummary,
 } from '../types/domain';
-import { api, ApiClientError, unwrap, toClientError } from '../api/client';
+import { api, ApiClientError, PIPELINE_TIMEOUT_MS, unwrap, toClientError } from '../api/client';
 
-export { api, ApiClientError };
+export { api, ApiClientError, PIPELINE_TIMEOUT_MS };
 
 export const groupsApi = {
   async list(): Promise<Group[]> {
@@ -195,7 +195,7 @@ export const ticketsApi = {
       const { data } = await api.post<ApiSuccess<ProcessTicketResult>>(
         '/tickets/process',
         form,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
+        { timeout: PIPELINE_TIMEOUT_MS },
       );
       return unwrap(data);
     } catch (err) {

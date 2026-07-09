@@ -1,6 +1,9 @@
 import axios, { AxiosError } from 'axios';
 import type { ApiFailure, ApiSuccess } from '../types/domain';
 
+/** OCR + IA en prod/móvil pueden tardar >30s (upload + cold start). */
+export const PIPELINE_TIMEOUT_MS = 120_000;
+
 const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export const api = axios.create({
@@ -19,7 +22,12 @@ api.interceptors.response.use(
       );
     }
     if (error.code === 'ECONNABORTED') {
-      return Promise.reject(new ApiClientError('Request timed out', 'NETWORK_ERROR'));
+      return Promise.reject(
+        new ApiClientError(
+          'El procesamiento tardó demasiado. Reintenta con buena luz o usa ingreso manual.',
+          'NETWORK_ERROR',
+        ),
+      );
     }
     return Promise.reject(
       new ApiClientError(error.message || 'Network error', 'NETWORK_ERROR'),

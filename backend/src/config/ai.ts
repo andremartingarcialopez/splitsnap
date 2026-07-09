@@ -10,7 +10,7 @@ export const aiConfig = {
   geminiEndpoint:
     'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
   geminiModel: 'gemini-2.5-flash',
-  timeoutMs: 30_000,
+  timeoutMs: 60_000,
   /** Evita 402 por créditos insuficientes (OpenRouter default ~65535). */
   maxTokens: 4096,
   httpReferer: env.OPENROUTER_HTTP_REFERER,

@@ -4,6 +4,7 @@ import { Alert } from '../components/Alert';
 import { PageHeader } from '../components/PageHeader';
 import { ScanProcessingOverlay } from '../components/ScanProcessingOverlay';
 import { ApiClientError, ticketsApi } from '../services/api';
+import { compressTicketImage } from '../utils/compressTicketImage';
 
 type ManualLine = { name: string; unitPrice: string };
 
@@ -35,7 +36,8 @@ export function NewTicketPage() {
     setError(null);
     setErrorCode(null);
     try {
-      const result = await ticketsApi.process(file);
+      const prepared = await compressTicketImage(file);
+      const result = await ticketsApi.process(prepared);
       navigate(`/tickets/${result.ticket.id}/review`);
     } catch (err) {
       const apiErr = err instanceof ApiClientError ? err : null;
