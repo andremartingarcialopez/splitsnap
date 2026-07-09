@@ -399,6 +399,16 @@ export function PublicTicketPage() {
                 </Alert>
               )
             )}
+
+            {ticket.sessionStatus === 'REVIEWING' && !ticket.isFinalized && (
+              <button
+                type="button"
+                className="btn-secondary w-full"
+                onClick={handleStartOver}
+              >
+                Entrar como otra persona en este dispositivo
+              </button>
+            )}
           </>
         )}
 
@@ -451,11 +461,6 @@ export function PublicTicketPage() {
           </div>
         )}
 
-        {step !== 'register' && step !== 'welcome' && (
-          <button type="button" className="btn-ghost w-full text-xs" onClick={handleStartOver}>
-            Entrar como otra persona en este dispositivo
-          </button>
-        )}
       </div>
     </PublicTicketLayout>
   );
