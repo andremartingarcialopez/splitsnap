@@ -46,6 +46,10 @@ ticketRouter.patch('/:id/collaboration-settings', (req, res, next) =>
   ticketController.updateCollaborationSettings(req, res, next),
 );
 
+ticketRouter.patch('/:id/ticket-participants/:ticketParticipantId/payment-status', (req, res, next) =>
+  ticketController.updatePaymentStatus(req, res, next),
+);
+
 ticketRouter.get('/:id/share', (req, res, next) =>
   ticketController.getShareInfo(req, res, next),
 );

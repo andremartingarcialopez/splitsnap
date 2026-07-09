@@ -15,6 +15,7 @@ import { collaborationService } from '../modules/collaboration/collaboration.ser
 import {
   adminSetupSchema,
   collaborationSettingsSchema,
+  paymentStatusSchema,
   startDivisionSchema,
 } from '../validators/collaboration.validator';
 import { AppError } from '../utils/AppError';
@@ -280,6 +281,21 @@ export class TicketController {
     try {
       const share = await collaborationService.getShareInfo(req.params.id);
       sendSuccess(res, share, 'Share info');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updatePaymentStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const body = paymentStatusSchema.parse(req.body ?? {});
+      await collaborationService.updatePaymentStatus(
+        req.params.id,
+        req.params.ticketParticipantId,
+        body.paymentStatus,
+      );
+      const ticket = await ticketService.getById(req.params.id);
+      sendSuccess(res, ticket, 'Payment status updated');
     } catch (err) {
       next(err);
     }

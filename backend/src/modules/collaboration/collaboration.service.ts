@@ -12,6 +12,7 @@ import {
   PARTICIPANT_SESSION_STATUS,
   PAYMENT_STATUS,
   TICKET_SESSION_STATUS,
+  type PaymentStatus,
 } from './collaboration.types';
 import { assignmentService } from '../assignment/assignment.service';
 import {
@@ -271,6 +272,13 @@ const PRE_DIVISION_STATUSES = new Set<string>([
   TICKET_SESSION_STATUS.REOPENED,
 ]);
 
+const ACTIVE_COLLABORATION_STATUSES = new Set<string>([
+  ...PRE_DIVISION_STATUSES,
+  TICKET_SESSION_STATUS.WAITING_FOR_PARTICIPANTS,
+  TICKET_SESSION_STATUS.IN_PROGRESS,
+  TICKET_SESSION_STATUS.REVIEWING,
+]);
+
 export class CollaborationService {
   private async broadcastUpdate(shareCode: string, event: CollaborationRealtimeEvent) {
     try {
@@ -339,7 +347,7 @@ export class CollaborationService {
     return { adminParticipantId: participant.id };
   }
 
-  /** Propina global y participantes esperados antes de iniciar división. */
+  /** Propina global y participantes esperados (antes o durante sesión colaborativa). */
   async updateCollaborationSettings(
     ticketId: string,
     input: CollaborationSettingsInput,
@@ -351,9 +359,22 @@ export class CollaborationService {
     if (ticket.finalizedAt) {
       throw new AppError('Ticket already finalized', 'VALIDATION_ERROR', 409);
     }
-    if (!PRE_DIVISION_STATUSES.has(ticket.sessionStatus)) {
+
+    const inPreDivision = PRE_DIVISION_STATUSES.has(ticket.sessionStatus);
+    const inActiveCollaboration =
+      Boolean(ticket.shareCode) && ACTIVE_COLLABORATION_STATUSES.has(ticket.sessionStatus);
+
+    if (!inPreDivision && !inActiveCollaboration) {
       throw new AppError(
-        'Cannot update settings after division has started',
+        'Cannot update collaboration settings for this ticket state',
+        'VALIDATION_ERROR',
+        400,
+      );
+    }
+
+    if (!inPreDivision && input.expectedParticipantCount !== undefined) {
+      throw new AppError(
+        'Expected participant count can only be changed before division starts',
         'VALIDATION_ERROR',
         400,
       );
@@ -366,11 +387,15 @@ export class CollaborationService {
         ...(input.globalTipPercentage != null
           ? { globalTipPercentage: decimal(input.globalTipPercentage) }
           : {}),
-        ...(input.expectedParticipantCount !== undefined
+        ...(inPreDivision && input.expectedParticipantCount !== undefined
           ? { expectedParticipantCount: input.expectedParticipantCount }
           : {}),
       },
     });
+
+    if (ticket.shareCode && input.globalTipPercentage != null) {
+      void this.broadcastUpdate(ticket.shareCode, 'ticket_status_changed');
+    }
 
     return {
       globalTipPercentage:
@@ -724,6 +749,51 @@ export class CollaborationService {
       void this.broadcastUpdate(shareCode, 'ticket_status_changed');
     }
     return result;
+  }
+
+  /** Marca pago manual de un participante (sin pasarela). */
+  async updatePaymentStatus(
+    ticketId: string,
+    ticketParticipantId: string,
+    paymentStatus: PaymentStatus,
+  ) {
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      throw new AppError('Ticket not found', 'NOT_FOUND', 404);
+    }
+    if (ticket.finalizedAt) {
+      throw new AppError('Ticket already finalized', 'VALIDATION_ERROR', 409);
+    }
+    if (!ticket.shareCode) {
+      throw new AppError('Not a collaborative ticket', 'VALIDATION_ERROR', 400);
+    }
+    if (!ACTIVE_COLLABORATION_STATUSES.has(ticket.sessionStatus)) {
+      throw new AppError(
+        'Cannot update payment status for this ticket state',
+        'VALIDATION_ERROR',
+        400,
+      );
+    }
+
+    const tp = await prisma.ticketParticipant.findFirst({
+      where: { id: ticketParticipantId, ticketId },
+    });
+    if (!tp) {
+      throw new AppError('Participant not found on this ticket', 'NOT_FOUND', 404);
+    }
+
+    await prisma.ticketParticipant.update({
+      where: { id: tp.id },
+      data: { paymentStatus },
+    });
+
+    void this.broadcastUpdate(ticket.shareCode, 'payment_status_changed');
+
+    return { ticketParticipantId: tp.id, paymentStatus };
+  }
+
+  notifyTicketUpdate(shareCode: string, event: CollaborationRealtimeEvent) {
+    void this.broadcastUpdate(shareCode, event);
   }
 }
 

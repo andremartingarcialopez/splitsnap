@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { BackButton } from '../components/BackButton';
+import { CollaborativeClosePanel } from '../components/CollaborativeClosePanel';
 import { ErrorState } from '../components/ErrorState';
 import { LiveConnectionBadge } from '../components/LiveConnectionBadge';
 import { LoadingState } from '../components/LoadingState';
@@ -16,9 +17,11 @@ export function TicketControlPage() {
   const { id } = useParams<{ id: string }>();
   const { ticket, status, error, reload } = useTicket(id);
   const [share, setShare] = useState<ShareInfo | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleRealtimeUpdate = useCallback(() => {
     void reload();
+    setRefreshKey((k) => k + 1);
     if (id) {
       void ticketsApi.getShareInfo(id).then(setShare).catch(() => undefined);
     }
@@ -66,6 +69,8 @@ export function TicketControlPage() {
 
   const participants = ticket.participants ?? [];
   const completed = participants.filter((p) => p.sessionStatus === 'COMPLETED').length;
+  const paid = participants.filter((p) => p.paymentStatus === 'PAID').length;
+  const isReviewing = ticket.sessionStatus === 'REVIEWING';
 
   return (
     <div className="space-y-6">
@@ -94,9 +99,13 @@ export function TicketControlPage() {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-foreground-muted dark:text-slate-400">Respondieron</p>
+            <p className="text-sm text-foreground-muted dark:text-slate-400">
+              {isReviewing ? 'Pagaron' : 'Respondieron'}
+            </p>
             <p className="font-semibold">
-              {completed} de {ticket.expectedParticipantCount ?? (participants.length || '—')}
+              {isReviewing
+                ? `${paid} de ${participants.length}`
+                : `${completed} de ${ticket.expectedParticipantCount ?? (participants.length || '—')}`}
             </p>
           </div>
         </div>
@@ -129,13 +138,32 @@ export function TicketControlPage() {
                       <span className="text-xs text-foreground-muted">(admin)</span>
                     )}
                   </span>
-                  <span title={tp.sessionStatus}>{statusIcon}</span>
+                  <span className="flex items-center gap-2">
+                    {tp.paymentStatus === 'PAID' && (
+                      <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        Pagado
+                      </span>
+                    )}
+                    <span title={tp.sessionStatus}>{statusIcon}</span>
+                  </span>
                 </li>
               );
             })}
           </ul>
         )}
       </section>
+
+      {(isReviewing || (participants.length > 0 && completed >= participants.length)) && (
+        <CollaborativeClosePanel
+          ticketId={id!}
+          sessionStatus={ticket.sessionStatus}
+          refreshKey={refreshKey}
+          onChanged={() => {
+            void reload();
+            setRefreshKey((k) => k + 1);
+          }}
+        />
+      )}
 
       {share && <ShareTicketPanel share={share} />}
     </div>

@@ -447,6 +447,22 @@ export const ticketsApi = {
       return toClientError(err);
     }
   },
+
+  async updatePaymentStatus(
+    ticketId: string,
+    ticketParticipantId: string,
+    paymentStatus: 'PENDING' | 'PAID',
+  ): Promise<Ticket> {
+    try {
+      const { data } = await api.patch<ApiSuccess<Ticket>>(
+        `/tickets/${ticketId}/ticket-participants/${ticketParticipantId}/payment-status`,
+        { paymentStatus },
+      );
+      return unwrap(data);
+    } catch (err) {
+      return toClientError(err);
+    }
+  },
 };
 
 export type ProductAssignmentDto = {

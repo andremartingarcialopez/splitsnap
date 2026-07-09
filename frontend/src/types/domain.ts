@@ -98,6 +98,7 @@ export type ProcessTicketResult = {
 };
 
 export type ParticipantSummary = {
+  ticketParticipantId?: string;
   participantId: string;
   name: string | null;
   subtotal: number;
@@ -107,6 +108,8 @@ export type ParticipantSummary = {
   tip: number;
   total: number;
   tipPercentage: number;
+  paymentStatus?: string;
+  sessionStatus?: string;
 };
 
 export type TicketSummary = {
@@ -119,6 +122,9 @@ export type TicketSummary = {
   tipMode: string;
   globalTipPercentage: number | null;
   canFinalize: boolean;
+  allParticipantsCompleted?: boolean;
+  allParticipantsPaid?: boolean;
+  canClose?: boolean;
   unassignedProducts: Array<{ id: string; name: string }>;
   varianceWarning: boolean;
   varianceAmount: number | null;
@@ -253,7 +259,9 @@ export type CollaborationRealtimeEvent =
   | 'product_selected'
   | 'product_unselected'
   | 'participant_completed'
-  | 'ticket_status_changed';
+  | 'ticket_status_changed'
+  | 'payment_status_changed'
+  | 'ticket_finalized';
 
 export type TicketUpdatedPayload = {
   event: CollaborationRealtimeEvent;

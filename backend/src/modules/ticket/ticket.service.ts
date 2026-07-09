@@ -8,6 +8,7 @@ import type { CreateTicketInput } from '../../validators/ticket.validator';
 import { saveTicketImage } from './storage';
 import { normalizeParsedTicket } from '../ai/productNormalizer';
 import { TICKET_SESSION_STATUS } from '../collaboration/collaboration.types';
+import { collaborationService } from '../collaboration/collaboration.service';
 import { calculationService } from '../calculation/calculation.service';
 
 function decimal(n: number | null | undefined): Prisma.Decimal | null {
@@ -429,13 +430,47 @@ export class TicketService {
   }
 
   async finalize(ticketId: string) {
-    const ticket = await this.getById(ticketId);
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, shareCode: true, finalizedAt: true },
+    });
+    if (!ticket) {
+      throw new AppError('Ticket not found', 'NOT_FOUND', 404);
+    }
     if (ticket.finalizedAt) {
       throw new AppError('Ticket already finalized', 'VALIDATION_ERROR', 409);
     }
 
     const summary = await calculationService.summarize(ticketId);
-    if (!summary.canFinalize) {
+    const isCollaborative = Boolean(ticket.shareCode);
+
+    if (isCollaborative) {
+      if (!summary.canClose) {
+        if (!summary.allParticipantsCompleted) {
+          throw new AppError(
+            'All participants must complete their selection before closing',
+            'VALIDATION_ERROR',
+            400,
+          );
+        }
+        if (!summary.allParticipantsPaid) {
+          throw new AppError(
+            'All participants must be marked as paid before closing',
+            'PAYMENT_PENDING',
+            400,
+          );
+        }
+        const orphanNames = summary.unassignedProducts.map((p) => p.name).join(', ');
+        throw new AppError(
+          orphanNames
+            ? `Cannot finalize: unassigned products (${orphanNames})`
+            : 'Cannot finalize: check participants, products and assignments',
+          'ORPHAN_PRODUCT',
+          400,
+          { unassignedProducts: summary.unassignedProducts },
+        );
+      }
+    } else if (!summary.canFinalize) {
       const orphanNames = summary.unassignedProducts.map((p) => p.name).join(', ');
       throw new AppError(
         orphanNames
@@ -452,8 +487,13 @@ export class TicketService {
       data: {
         processingStatus: 'COMPLETED',
         finalizedAt: new Date(),
+        ...(isCollaborative ? { sessionStatus: TICKET_SESSION_STATUS.FINISHED } : {}),
       },
     });
+
+    if (ticket.shareCode) {
+      collaborationService.notifyTicketUpdate(ticket.shareCode, 'ticket_finalized');
+    }
 
     return this.getById(ticketId);
   }

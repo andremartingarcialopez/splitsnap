@@ -1,8 +1,13 @@
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../utils/AppError';
 import { env } from '../../config/env';
+import {
+  PARTICIPANT_SESSION_STATUS,
+  PAYMENT_STATUS,
+} from '../collaboration/collaboration.types';
 
 export type ParticipantSummary = {
+  ticketParticipantId: string;
   participantId: string;
   name: string | null;
   subtotal: number;
@@ -12,6 +17,8 @@ export type ParticipantSummary = {
   tip: number;
   total: number;
   tipPercentage: number;
+  paymentStatus: string;
+  sessionStatus: string;
 };
 
 export type TicketSummary = {
@@ -24,6 +31,9 @@ export type TicketSummary = {
   tipMode: string;
   globalTipPercentage: number | null;
   canFinalize: boolean;
+  allParticipantsCompleted: boolean;
+  allParticipantsPaid: boolean;
+  canClose: boolean;
   unassignedProducts: Array<{ id: string; name: string }>;
   varianceWarning: boolean;
   varianceAmount: number | null;
@@ -68,7 +78,7 @@ export class CalculationService {
 
     for (const tp of ticket.ticketParticipants) {
       subtotals.set(tp.participantId, 0);
-      names.set(tp.participantId, tp.participant.name);
+      names.set(tp.participantId, tp.displayName ?? tp.participant.name);
     }
 
     for (const product of ticket.products) {
@@ -119,6 +129,7 @@ export class CalculationService {
       const total = round2(subtotalWithTax + tip);
 
       participants.push({
+        ticketParticipantId: tp.id,
         participantId: tp.participantId,
         name: names.get(tp.participantId) ?? tp.participant.name,
         subtotal,
@@ -128,6 +139,8 @@ export class CalculationService {
         tip,
         total,
         tipPercentage,
+        paymentStatus: tp.paymentStatus,
+        sessionStatus: tp.sessionStatus,
       });
     }
 
@@ -146,6 +159,21 @@ export class CalculationService {
       unassignedProducts.length === 0 &&
       ticketSubtotal > 0;
 
+    const allParticipantsCompleted =
+      ticket.ticketParticipants.length > 0 &&
+      ticket.ticketParticipants.every(
+        (tp) => tp.sessionStatus === PARTICIPANT_SESSION_STATUS.COMPLETED,
+      );
+
+    const allParticipantsPaid =
+      ticket.ticketParticipants.length > 0 &&
+      ticket.ticketParticipants.every((tp) => tp.paymentStatus === PAYMENT_STATUS.PAID);
+
+    const isCollaborative = Boolean(ticket.shareCode);
+    const canClose = isCollaborative
+      ? canFinalize && allParticipantsCompleted && allParticipantsPaid
+      : canFinalize;
+
     return {
       participants,
       grandTotal,
@@ -158,6 +186,9 @@ export class CalculationService {
         ? Number(ticket.globalTipPercentage)
         : null,
       canFinalize,
+      allParticipantsCompleted,
+      allParticipantsPaid,
+      canClose,
       unassignedProducts,
       varianceWarning,
       varianceAmount,

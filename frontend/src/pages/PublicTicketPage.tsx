@@ -339,33 +339,67 @@ export function PublicTicketPage() {
 
         {step === 'waiting' && session && (
           <>
-            <div className="card space-y-4 text-center">
-              <p className="text-4xl">✅</p>
-              <h2 className="text-xl font-bold text-foreground dark:text-white">
-                Tu consumo fue enviado
-              </h2>
-              <p className="text-sm text-foreground-muted dark:text-slate-400">
-                Esperando a los demás participantes
-              </p>
-              <p className="font-semibold">
-                {ticket.completedParticipantCount} de {expected || ticket.participantCount} personas
-                han terminado
-              </p>
-              <div className="h-2 overflow-hidden rounded-full bg-border dark:bg-slate-800">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${progressPct}%` }}
+            {ticket.isFinalized || ticket.sessionStatus === 'FINISHED' ? (
+              <div className="card space-y-4 text-center">
+                <p className="text-4xl">🏁</p>
+                <h2 className="text-xl font-bold text-foreground dark:text-white">
+                  Ticket finalizado
+                </h2>
+                <p className="text-sm text-foreground-muted dark:text-slate-400">
+                  El administrador cerró este ticket. Gracias por usar SplitSnap.
+                </p>
+                <ParticipantMiniSummary
+                  productCount={session.selectedProducts.length}
+                  subtotal={session.subtotal}
+                  tip={session.tip}
+                  total={session.total}
                 />
               </div>
-              <ParticipantMiniSummary
-                productCount={session.selectedProducts.length}
-                subtotal={session.subtotal}
-                tip={session.tip}
-                total={session.total}
-              />
-            </div>
+            ) : ticket.sessionStatus === 'REVIEWING' ? (
+              <div className="card space-y-4 text-center">
+                <p className="text-4xl">💰</p>
+                <h2 className="text-xl font-bold text-foreground dark:text-white">
+                  Tu total a pagar
+                </h2>
+                <p className="text-sm text-foreground-muted dark:text-slate-400">
+                  Todos terminaron. Transfiere este monto al administrador fuera de la app.
+                </p>
+                <ParticipantMiniSummary
+                  productCount={session.selectedProducts.length}
+                  subtotal={session.subtotal}
+                  tip={session.tip}
+                  total={session.total}
+                />
+              </div>
+            ) : (
+              <div className="card space-y-4 text-center">
+                <p className="text-4xl">✅</p>
+                <h2 className="text-xl font-bold text-foreground dark:text-white">
+                  Tu consumo fue enviado
+                </h2>
+                <p className="text-sm text-foreground-muted dark:text-slate-400">
+                  Esperando a los demás participantes
+                </p>
+                <p className="font-semibold">
+                  {ticket.completedParticipantCount} de {expected || ticket.participantCount}{' '}
+                  personas han terminado
+                </p>
+                <div className="h-2 overflow-hidden rounded-full bg-border dark:bg-slate-800">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+                <ParticipantMiniSummary
+                  productCount={session.selectedProducts.length}
+                  subtotal={session.subtotal}
+                  tip={session.tip}
+                  total={session.total}
+                />
+              </div>
+            )}
 
-            {session.canEdit ? (
+            {session.canEdit && ticket.sessionStatus !== 'FINISHED' && !ticket.isFinalized ? (
               <button
                 type="button"
                 className="btn-secondary w-full"
@@ -374,10 +408,14 @@ export function PublicTicketPage() {
                 Modificar selección
               </button>
             ) : (
-              <Alert tone="info">
-                Tu selección fue enviada. Si necesitas cambiarla, pide al administrador que reabra
-                el ticket.
-              </Alert>
+              !ticket.isFinalized &&
+              ticket.sessionStatus !== 'FINISHED' &&
+              ticket.sessionStatus !== 'REVIEWING' && (
+                <Alert tone="info">
+                  Tu selección fue enviada. Si necesitas cambiarla, pide al administrador que
+                  reabra el ticket.
+                </Alert>
+              )
             )}
           </>
         )}

@@ -9,7 +9,9 @@ export type CollaborationRealtimeEvent =
   | 'product_selected'
   | 'product_unselected'
   | 'participant_completed'
-  | 'ticket_status_changed';
+  | 'ticket_status_changed'
+  | 'payment_status_changed'
+  | 'ticket_finalized';
 
 let io: Server | null = null;
 

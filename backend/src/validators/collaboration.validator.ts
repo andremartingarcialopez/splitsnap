@@ -17,6 +17,12 @@ export const collaborationSettingsSchema = z.object({
   expectedParticipantCount: z.coerce.number().int().min(1).max(99).optional().nullable(),
 });
 
+export const paymentStatusSchema = z.object({
+  paymentStatus: z.enum(['PENDING', 'PAID']),
+});
+
+export type PaymentStatusInput = z.infer<typeof paymentStatusSchema>;
+
 export type StartDivisionInput = z.infer<typeof startDivisionSchema>;
 export type AdminSetupInput = z.infer<typeof adminSetupSchema>;
 export type CollaborationSettingsInput = z.infer<typeof collaborationSettingsSchema>;
