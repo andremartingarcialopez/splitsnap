@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Alert } from '../components/Alert';
 import { BackButton } from '../components/BackButton';
 import { ErrorState } from '../components/ErrorState';
+import { LiveConnectionBadge } from '../components/LiveConnectionBadge';
 import { LoadingState } from '../components/LoadingState';
 import { PageHeader } from '../components/PageHeader';
 import { ShareTicketPanel } from '../components/ShareTicketPanel';
 import { avatarEmoji } from '../constants/avatars';
 import { useTicket } from '../hooks/useTicket';
+import { useTicketRealtime } from '../hooks/useTicketRealtime';
 import { ticketsApi } from '../services/api';
 import type { ShareInfo } from '../types/domain';
 
@@ -15,6 +16,19 @@ export function TicketControlPage() {
   const { id } = useParams<{ id: string }>();
   const { ticket, status, error, reload } = useTicket(id);
   const [share, setShare] = useState<ShareInfo | null>(null);
+
+  const handleRealtimeUpdate = useCallback(() => {
+    void reload();
+    if (id) {
+      void ticketsApi.getShareInfo(id).then(setShare).catch(() => undefined);
+    }
+  }, [id, reload]);
+
+  const { connected } = useTicketRealtime({
+    shareCode: ticket?.shareCode,
+    enabled: Boolean(ticket?.shareCode),
+    onUpdate: handleRealtimeUpdate,
+  });
 
   useEffect(() => {
     if (!id || !ticket?.shareCode) return;
@@ -60,11 +74,14 @@ export function TicketControlPage() {
         subtitle={ticket.restaurantName || ticket.title}
         backTo="/"
         actions={
-          share ? (
-            <Link to={`/tickets/${id}/share`} className="btn-secondary btn-sm">
-              Compartir
-            </Link>
-          ) : undefined
+          <>
+            <LiveConnectionBadge connected={connected} />
+            {share ? (
+              <Link to={`/tickets/${id}/share`} className="btn-secondary btn-sm">
+                Compartir
+              </Link>
+            ) : null}
+          </>
         }
       />
 
@@ -83,11 +100,6 @@ export function TicketControlPage() {
             </p>
           </div>
         </div>
-
-        <Alert tone="info">
-          Tiempo real llegará en la Fase 4. Por ahora puedes volver a compartir el enlace y revisar
-          quién se ha unido.
-        </Alert>
       </div>
 
       <section className="card space-y-3">

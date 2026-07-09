@@ -245,3 +245,18 @@ export type PublicSessionResponse = {
   ticket: PublicTicket;
   session: ParticipantSession;
 };
+
+export type CollaborationRealtimeEvent =
+  | 'ticket_started'
+  | 'participant_joined'
+  | 'participant_started'
+  | 'product_selected'
+  | 'product_unselected'
+  | 'participant_completed'
+  | 'ticket_status_changed';
+
+export type TicketUpdatedPayload = {
+  event: CollaborationRealtimeEvent;
+  ticket: PublicTicket;
+  at: string;
+};

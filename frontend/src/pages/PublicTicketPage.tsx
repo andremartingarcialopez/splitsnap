@@ -4,6 +4,7 @@ import { Alert } from '../components/Alert';
 import { AvatarPicker } from '../components/AvatarPicker';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
+import { LiveConnectionBadge } from '../components/LiveConnectionBadge';
 import {
   ParticipantAvatarBadge,
   ParticipantMiniSummary,
@@ -11,8 +12,9 @@ import {
 } from '../components/ParticipantProductCard';
 import { PublicTicketLayout } from '../components/PublicTicketLayout';
 import { AVATAR_GALLERY } from '../constants/avatars';
+import { useTicketRealtime } from '../hooks/useTicketRealtime';
 import { ApiClientError, publicApi } from '../services/publicApi';
-import type { ParticipantSession, PublicTicket } from '../types/domain';
+import type { ParticipantSession, PublicTicket, TicketUpdatedPayload } from '../types/domain';
 import { formatMoney } from '../utils/money';
 import {
   clearParticipantSession,
@@ -77,19 +79,27 @@ export function PublicTicketPage() {
     void bootstrap();
   }, [bootstrap]);
 
-  useEffect(() => {
-    if (step !== 'waiting' || !code || !session) return;
-    const timer = window.setInterval(() => {
+  const handleRealtimeUpdate = useCallback(
+    (payload: TicketUpdatedPayload) => {
+      setTicket(payload.ticket);
+      const participantId = session?.ticketParticipantId;
+      if (!participantId) return;
       void publicApi
-        .getSession(code, session.ticketParticipantId)
+        .getSession(code, participantId)
         .then((data) => {
           setTicket(data.ticket);
           setSession(data.session);
         })
         .catch(() => undefined);
-    }, 5000);
-    return () => window.clearInterval(timer);
-  }, [step, code, session?.ticketParticipantId]);
+    },
+    [code, session?.ticketParticipantId],
+  );
+
+  const { connected } = useTicketRealtime({
+    shareCode: code,
+    enabled: Boolean(code) && !loading && Boolean(ticket),
+    onUpdate: handleRealtimeUpdate,
+  });
 
   const selectedSet = useMemo(
     () => new Set(session?.selectedProductIds ?? []),
@@ -203,6 +213,12 @@ export function PublicTicketPage() {
   return (
     <PublicTicketLayout onBack={showPublicBack ? handlePublicBack : undefined}>
       <div className="space-y-5">
+        {(step === 'select' || step === 'waiting') && (
+          <div className="flex justify-end">
+            <LiveConnectionBadge connected={connected} />
+          </div>
+        )}
+
         {error && <Alert tone="error">{error}</Alert>}
 
         {step === 'welcome' && (

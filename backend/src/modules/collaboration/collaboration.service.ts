@@ -14,6 +14,10 @@ import {
   TICKET_SESSION_STATUS,
 } from './collaboration.types';
 import { assignmentService } from '../assignment/assignment.service';
+import {
+  emitTicketUpdated,
+  type CollaborationRealtimeEvent,
+} from './collaboration.realtime';
 
 const ACTIVE_SHARE_STATUSES = new Set<string>([
   TICKET_SESSION_STATUS.WAITING_FOR_PARTICIPANTS,
@@ -245,6 +249,15 @@ const PRE_DIVISION_STATUSES = new Set<string>([
 ]);
 
 export class CollaborationService {
+  private async broadcastUpdate(shareCode: string, event: CollaborationRealtimeEvent) {
+    try {
+      const ticket = await this.getPublicByShareCode(shareCode);
+      emitTicketUpdated(shareCode, event, ticket);
+    } catch (err) {
+      console.error('[realtime] broadcast failed', err);
+    }
+  }
+
   /** Registra o actualiza al administrador como participante del ticket. */
   async setupAdmin(ticketId: string, input: AdminSetupInput) {
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
@@ -454,7 +467,9 @@ export class CollaborationService {
       }
     });
 
-    return this.getShareInfo(ticketId);
+    const share = await this.getShareInfo(ticketId);
+    void this.broadcastUpdate(share.shareCode, 'ticket_started');
+    return share;
   }
 
   async getShareInfo(ticketId: string) {
@@ -525,10 +540,12 @@ export class CollaborationService {
       await maybePromoteToInProgress(ticket.id);
 
       const refreshed = await loadTicketByShareCode(shareCode);
-      return {
+      const result = {
         ticket: serializePublicTicket(refreshed),
         session: serializeParticipantSession(refreshed, existing.id),
       };
+      void this.broadcastUpdate(shareCode, 'participant_joined');
+      return result;
     }
 
     const displayName =
@@ -552,10 +569,12 @@ export class CollaborationService {
     await maybePromoteToInProgress(ticket.id);
 
     const refreshed = await loadTicketByShareCode(shareCode);
-    return {
+    const result = {
       ticket: serializePublicTicket(refreshed),
       session: serializeParticipantSession(refreshed, created.id),
     };
+    void this.broadcastUpdate(shareCode, 'participant_joined');
+    return result;
   }
 
   /** Vista de participante con selección actual. */
@@ -598,6 +617,7 @@ export class CollaborationService {
     }
 
     const existing = product.assignments.find((a) => a.participantId === tp.participantId);
+    const wasSelected = Boolean(existing);
     if (existing) {
       await assignmentService.remove(existing.id);
     } else {
@@ -626,13 +646,21 @@ export class CollaborationService {
     await maybePromoteToInProgress(ticket.id);
 
     const refreshed = await loadTicketByShareCode(shareCode);
-    return {
+    const result = {
       ticket: serializePublicTicket(refreshed),
       session: serializeParticipantSession(refreshed, ticketParticipantId),
     };
+    void this.broadcastUpdate(
+      shareCode,
+      wasSelected ? 'product_unselected' : 'product_selected',
+    );
+    if (tp.sessionStatus !== PARTICIPANT_SESSION_STATUS.SELECTING) {
+      void this.broadcastUpdate(shareCode, 'participant_started');
+    }
+    return result;
   }
 
-  /** Confirmar selección del participante. */
+  /** Marcar selección del participante como completada. */
   async submitSelection(shareCode: string, ticketParticipantId: string) {
     const ticket = await loadTicketByShareCode(shareCode);
     assertTicketJoinable(ticket);
@@ -660,10 +688,15 @@ export class CollaborationService {
     await maybePromoteToReviewing(ticket.id);
 
     const refreshed = await loadTicketByShareCode(shareCode);
-    return {
+    const result = {
       ticket: serializePublicTicket(refreshed),
       session: serializeParticipantSession(refreshed, ticketParticipantId),
     };
+    void this.broadcastUpdate(shareCode, 'participant_completed');
+    if (refreshed.sessionStatus === TICKET_SESSION_STATUS.REVIEWING) {
+      void this.broadcastUpdate(shareCode, 'ticket_status_changed');
+    }
+    return result;
   }
 }
 
