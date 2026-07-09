@@ -28,8 +28,7 @@ export function HomePage() {
   const { tickets, status, reload } = useTickets();
   const [actionError, setActionError] = useState<string | null>(null);
   const [scanModalOpen, setScanModalOpen] = useState(false);
-  const { processing, error, errorCode, failedTicketId, scanFile, clearScanError } =
-    useTicketScanFlow();
+  const { processing, error, scanFile, clearScanError } = useTicketScanFlow();
 
   const activeTickets =
     status === 'ready'
@@ -90,12 +89,6 @@ export function HomePage() {
             <Alert tone="error">
               <div className="space-y-2 text-left">
                 <p>{error}</p>
-                {errorCode && (
-                  <p className="text-xs opacity-80">
-                    Código: {errorCode}
-                    {failedTicketId ? ` · ticket ${failedTicketId}` : ''}
-                  </p>
-                )}
                 <button
                   type="button"
                   className="btn-secondary btn-sm"

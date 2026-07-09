@@ -30,7 +30,7 @@ export function auditParsedTicket(raw: unknown): ParsedTicket {
   const parsed = parsedTicketSchema.safeParse(raw);
   if (!parsed.success) {
     throw new AppError(
-      'AI ticket JSON failed structural validation',
+      'No se pudo interpretar el ticket',
       'AI_PARSE_ERROR',
       422,
       parsed.error.flatten(),

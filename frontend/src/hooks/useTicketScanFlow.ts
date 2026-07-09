@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiClientError, ticketsApi } from '../services/api';
 import { prepareTicketImageForUpload } from '../utils/compressTicketImage';
+import { getScanErrorMessage } from '../utils/scanErrorMessage';
 
 type ScanFileOptions = {
   /** Muestra vista previa local antes de procesar (pantalla /scan). */
@@ -13,8 +14,6 @@ export function useTicketScanFlow() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [errorCode, setErrorCode] = useState<string | null>(null);
-  const [failedTicketId, setFailedTicketId] = useState<string | null>(null);
 
   const scanFile = useCallback(
     async (file: File, options?: ScanFileOptions): Promise<boolean> => {
@@ -29,8 +28,6 @@ export function useTicketScanFlow() {
 
       setProcessing(true);
       setError(null);
-      setErrorCode(null);
-      setFailedTicketId(null);
 
       try {
         const prepared = await prepareTicketImageForUpload(file);
@@ -39,22 +36,14 @@ export function useTicketScanFlow() {
         return true;
       } catch (err) {
         if (err instanceof Error && err.message === 'EMPTY_IMAGE') {
-          setError('No se pudo leer la foto. Intenta de nuevo o elige una imagen de la galería.');
-          setErrorCode('VALIDATION_ERROR');
+          setError(
+            'No se pudo leer la foto. Intenta de nuevo o elige una imagen de la galería.',
+          );
           return false;
         }
 
         const apiErr = err instanceof ApiClientError ? err : null;
-        setError(
-          apiErr?.message ||
-            'No se pudo procesar el ticket. Puedes ingresar los productos manualmente.',
-        );
-        setErrorCode(apiErr?.code ?? 'OCR_ERROR');
-
-        const details = apiErr?.details as
-          | { ticketId?: string; allowManualEntry?: boolean }
-          | undefined;
-        if (details?.ticketId) setFailedTicketId(details.ticketId);
+        setError(getScanErrorMessage(apiErr?.code));
         return false;
       } finally {
         setProcessing(false);
@@ -72,16 +61,12 @@ export function useTicketScanFlow() {
 
   const clearScanError = useCallback(() => {
     setError(null);
-    setErrorCode(null);
-    setFailedTicketId(null);
   }, []);
 
   return {
     previewUrl,
     processing,
     error,
-    errorCode,
-    failedTicketId,
     scanFile,
     clearPreview,
     clearScanError,

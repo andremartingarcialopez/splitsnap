@@ -13,8 +13,7 @@ type ManualLine = { name: string; unitPrice: string };
 
 export function NewTicketPage() {
   const navigate = useNavigate();
-  const { previewUrl, processing, error, errorCode, failedTicketId, scanFile } =
-    useTicketScanFlow();
+  const { previewUrl, processing, error, scanFile } = useTicketScanFlow();
   const [showManual, setShowManual] = useState(false);
   const [manualError, setManualError] = useState<string | null>(null);
   const [restaurantName, setRestaurantName] = useState('');
@@ -121,12 +120,6 @@ export function NewTicketPage() {
         <Alert tone="error">
           <div className="space-y-1">
             <p>{error}</p>
-            {errorCode && (
-              <p className="text-xs opacity-80">
-                Código: {errorCode}
-                {failedTicketId ? ` · ticket ${failedTicketId}` : ''}
-              </p>
-            )}
             <p className="text-xs">
               Puedes reintentar con otra foto o completar el ticket manualmente abajo.
             </p>
