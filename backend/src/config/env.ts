@@ -47,6 +47,10 @@ export const env = {
   ...parsed,
   aiProvider,
   useMockPipeline: useMock,
+  /** Orígenes permitidos (CORS_ORIGIN separado por comas). */
+  corsOrigins: parsed.CORS_ORIGIN.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   storageDir:
     parsed.STORAGE_DIR ||
     path.resolve(process.cwd(), '../../storage'),

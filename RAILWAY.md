@@ -58,7 +58,7 @@ git push -u origin main
 | `DATABASE_URL` | Referencia `${{MySQL.MYSQL_URL}}` (usa *Add Reference* desde el servicio MySQL) |
 | `NODE_ENV` | `production` |
 | `PORT` | Railway lo inyecta solo; no hace falta fijarlo |
-| `CORS_ORIGIN` | URL del frontend (paso 5), ej. `https://splitsnap-web-production.up.railway.app` |
+| `CORS_ORIGIN` | URL del frontend (sin ruta), ej. `https://splitsnapweb-production.up.railway.app` |
 | `STORAGE_DIR` | `/data/uploads` |
 | `PIPELINE_MOCK` | `false` |
 | `OCR_SPACE_API_KEY` | tu clave |
