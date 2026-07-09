@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AdminProductSelectCard } from '../components/AdminProductSelectCard';
 import { Alert } from '../components/Alert';
 import { AvatarPicker } from '../components/AvatarPicker';
-import { BackButton } from '../components/BackButton';
 import { ErrorState } from '../components/ErrorState';
 import { GlobalTipSelector } from '../components/GlobalTipSelector';
 import { LoadingState } from '../components/LoadingState';
@@ -155,18 +154,6 @@ export function TicketReviewPage() {
     }
   }
 
-  function handleBack() {
-    if (step === 'settings') {
-      setStep('products');
-      return;
-    }
-    if (step === 'selection') {
-      setStep('settings');
-      return;
-    }
-    navigate('/scan');
-  }
-
   async function toggleAdminProduct(productId: string) {
     if (!adminParticipant) return;
     const product = ticket?.products?.find((p) => p.id === productId);
@@ -197,7 +184,6 @@ export function TicketReviewPage() {
   if (status === 'loading') {
     return (
       <div className="space-y-4">
-        <BackButton onClick={() => navigate('/scan')} className="-ml-2" />
         <LoadingState label="Cargando ticket…" />
       </div>
     );
@@ -205,7 +191,6 @@ export function TicketReviewPage() {
   if (status === 'error' || !ticket) {
     return (
       <div className="space-y-4">
-        <BackButton onClick={() => navigate('/scan')} className="-ml-2" />
         <ErrorState message={error || 'Ticket no encontrado'} onRetry={() => void reload()} />
       </div>
     );
@@ -220,7 +205,6 @@ export function TicketReviewPage() {
           ticket.title ||
           new Date(ticket.createdAt).toLocaleDateString('es-MX')
         }
-        onBack={handleBack}
       />
 
       <div className="flex gap-2">

@@ -6,6 +6,7 @@ import { ErrorState } from '../components/ErrorState';
 import { LiveConnectionBadge } from '../components/LiveConnectionBadge';
 import { LoadingState } from '../components/LoadingState';
 import { PageHeader } from '../components/PageHeader';
+import { ParticipantSessionBadge } from '../components/ParticipantSessionBadge';
 import { ShareTicketPanel } from '../components/ShareTicketPanel';
 import { avatarEmoji } from '../constants/avatars';
 import { useConfirm } from '../context/ConfirmContext';
@@ -14,6 +15,7 @@ import { useTicketRealtime } from '../hooks/useTicketRealtime';
 import { ApiClientError, ticketsApi } from '../services/api';
 import type { ShareInfo } from '../types/domain';
 import { showSuccessToast } from '../utils/toast';
+import { formatTicketSessionStatus } from '../utils/statusLabels';
 
 export function TicketControlPage() {
   const { id } = useParams<{ id: string }>();
@@ -119,14 +121,14 @@ export function TicketControlPage() {
       {actionError && <Alert tone="error">{actionError}</Alert>}
 
       <div className="card space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex min-w-0 items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
             <p className="text-sm text-foreground-muted dark:text-slate-400">Estado</p>
             <p className="font-semibold text-foreground dark:text-white">
-              {ticket.sessionStatus?.replace(/_/g, ' ') ?? 'Activo'}
+              {formatTicketSessionStatus(ticket.sessionStatus)}
             </p>
           </div>
-          <div className="text-right">
+          <div className="shrink-0 text-right">
             <p className="text-sm text-foreground-muted dark:text-slate-400">
               {isReviewing ? 'Pagaron' : 'Respondieron'}
             </p>
@@ -145,38 +147,34 @@ export function TicketControlPage() {
           <p className="text-sm text-foreground-muted">Nadie se ha unido todavía.</p>
         ) : (
           <ul className="space-y-2">
-            {participants.map((tp) => {
-              const statusIcon =
-                tp.sessionStatus === 'COMPLETED'
-                  ? '🟢'
-                  : tp.sessionStatus === 'SELECTING'
-                    ? '🟡'
-                    : tp.sessionStatus === 'ABANDONED'
-                      ? '🔴'
-                      : '⚪';
-              return (
-                <li
-                  key={tp.id}
-                  className="flex items-center justify-between rounded-2xl bg-surface-muted px-4 py-3 dark:bg-slate-800/50"
-                >
-                  <span className="flex items-center gap-2 font-medium">
-                    <span>{avatarEmoji(tp.avatarId)}</span>
+            {participants.map((tp) => (
+              <li
+                key={tp.id}
+                className="flex min-w-0 items-center gap-3 rounded-2xl bg-surface-muted px-4 py-3 dark:bg-slate-800/50"
+              >
+                <span className="flex min-w-0 flex-1 items-center gap-2 font-medium">
+                  <span className="shrink-0" aria-hidden>
+                    {avatarEmoji(tp.avatarId)}
+                  </span>
+                  <span className="min-w-0 truncate">
                     {tp.displayName ?? tp.participant.name ?? 'Participante'}
                     {tp.isAdmin && (
-                      <span className="text-xs text-foreground-muted">(admin)</span>
-                    )}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    {tp.paymentStatus === 'PAID' && (
-                      <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                        Pagado
+                      <span className="ml-1 text-xs font-normal text-foreground-muted">
+                        (administrador)
                       </span>
                     )}
-                    <span title={tp.sessionStatus}>{statusIcon}</span>
                   </span>
-                </li>
-              );
-            })}
+                </span>
+                <span className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  {tp.paymentStatus === 'PAID' && (
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                      Pagado
+                    </span>
+                  )}
+                  <ParticipantSessionBadge sessionStatus={tp.sessionStatus} />
+                </span>
+              </li>
+            ))}
           </ul>
         )}
       </section>
