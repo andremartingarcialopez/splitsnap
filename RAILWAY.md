@@ -85,9 +85,9 @@ git push -u origin main
 | Opción | Root Directory | Dockerfile (Settings → Build) |
 |--------|----------------|-------------------------------|
 | **A (recomendada)** | `frontend` | `Dockerfile.railway` (auto vía `frontend/railway.toml`) |
-| **B** | *(vacío / raíz)* | `Dockerfile.web` |
+| **B** | *(vacío / raíz)* | `Dockerfile.railway` o `Dockerfile.web` (ambos en la raíz del repo) |
 
-> El error `npm error Missing script: "build"` significa que el servicio web **no** tiene Root Directory = `frontend` (está compilando la raíz del repo).
+> Si ves `couldn't locate Dockerfile.railway`: Root Directory vacío pero el archivo solo estaba en `frontend/` — usa opción B con `Dockerfile.railway` en raíz, o opción A.
 3. **Generate Domain** (ej. `splitsnap-web-production.up.railway.app`)
 4. **Variables**:
 
@@ -136,7 +136,7 @@ Cada cambio: `git push` → Railway redeploya automáticamente (si activaste dep
 
 | Error en logs | Causa | Solución |
 |---------------|-------|----------|
-| `npm error Missing script: "build"` (web) | Railway compila la **raíz** del monorepo con Nixpacks | **Settings → Source → Root Directory** = `frontend`. Dockerfile = `Dockerfile.railway` (o raíz vacía + `Dockerfile.web`) |
+| `couldn't locate Dockerfile.railway` (web) | Dockerfile en raíz pero archivo solo en `frontend/` | Root Directory = `frontend` **o** Dockerfile = `Dockerfile.railway` en raíz del repo |
 | `Dockerfile invalid: VOLUME at Line 44` (api) | Railway usa `backend/Dockerfile` (docker-compose) | Root Directory = `backend`, Dockerfile = **`Dockerfile.railway`** (no `Dockerfile`) |
 | `Healthcheck failure` / `service unavailable` (api) | El probe `/api/v1/health` devuelve **503** si MySQL no conecta | Verifica `DATABASE_URL` = `${{MySQL.MYSQL_URL}}`. Revisa **Deploy Logs** (¿`prisma migrate deploy` OK?). El healthcheck de Railway usa `/api/v1/health/live` |
 | Build con Nixpacks en vez de Docker | `railway.toml` no se lee (Root Directory incorrecto) | Root Directory debe ser `backend` o `frontend` según el servicio |
