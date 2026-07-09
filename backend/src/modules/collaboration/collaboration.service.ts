@@ -222,11 +222,19 @@ async function maybePromoteToInProgress(ticketId: string) {
 }
 
 async function maybePromoteToReviewing(ticketId: string) {
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    select: { expectedParticipantCount: true },
+  });
   const participants = await prisma.ticketParticipant.findMany({
     where: { ticketId },
     select: { sessionStatus: true },
   });
   if (participants.length === 0) return;
+
+  const expected = ticket?.expectedParticipantCount;
+  if (expected != null && participants.length < expected) return;
+
   const allDone = participants.every(
     (p) => p.sessionStatus === PARTICIPANT_SESSION_STATUS.COMPLETED,
   );
@@ -236,6 +244,21 @@ async function maybePromoteToReviewing(ticketId: string) {
       data: { sessionStatus: TICKET_SESSION_STATUS.REVIEWING },
     });
   }
+}
+
+async function markAdminSelectionComplete(ticketId: string) {
+  const admin = await prisma.ticketParticipant.findFirst({
+    where: { ticketId, isAdmin: true },
+  });
+  if (!admin || admin.sessionStatus === PARTICIPANT_SESSION_STATUS.COMPLETED) return;
+
+  await prisma.ticketParticipant.update({
+    where: { id: admin.id },
+    data: {
+      sessionStatus: PARTICIPANT_SESSION_STATUS.COMPLETED,
+      selectionSubmittedAt: admin.selectionSubmittedAt ?? new Date(),
+    },
+  });
 }
 
 function buildPublicPath(shareCode: string): string {
@@ -466,6 +489,10 @@ export class CollaborationService {
         });
       }
     });
+
+    await markAdminSelectionComplete(ticketId);
+    await maybePromoteToInProgress(ticketId);
+    await maybePromoteToReviewing(ticketId);
 
     const share = await this.getShareInfo(ticketId);
     void this.broadcastUpdate(share.shareCode, 'ticket_started');
