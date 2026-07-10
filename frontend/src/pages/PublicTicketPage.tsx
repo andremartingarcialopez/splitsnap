@@ -344,7 +344,7 @@ export function PublicTicketPage() {
                   Tu total a pagar
                 </h2>
                 <p className="text-sm text-foreground-muted dark:text-slate-400">
-                  Todos terminaron. Transfiere este monto al administrador fuera de la app.
+                  Tu consumo ya fue enviado al administrador.
                 </p>
                 <ParticipantMiniSummary
                   productCount={session.selectedProducts.length}
