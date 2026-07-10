@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
 import { CollaborativeClosePanel } from '../components/CollaborativeClosePanel';
 import { ErrorState } from '../components/ErrorState';
@@ -102,11 +102,6 @@ export function TicketControlPage() {
         actions={
           <>
             <LiveConnectionBadge connected={connected} />
-            {share ? (
-              <Link to={`/tickets/${id}/share`} className="btn-secondary btn-sm">
-                Compartir
-              </Link>
-            ) : null}
             <button
               type="button"
               className="btn-danger btn-sm"
