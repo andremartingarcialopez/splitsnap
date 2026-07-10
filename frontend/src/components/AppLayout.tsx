@@ -43,21 +43,48 @@ function NavItemLink({ item }: { item: NavItem }) {
   );
 }
 
+function BrandHomeLink({ variant = 'mobile' }: { variant?: 'mobile' | 'desktop' }) {
+  if (variant === 'desktop') {
+    return (
+      <NavLink
+        to="/"
+        end
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-xl transition hover:opacity-80"
+        aria-label="Ir al inicio"
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-glow-sm">
+          <AppIcon icon={faUtensils} className="text-white" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-base font-bold text-foreground dark:text-white">SplitSnap</p>
+          <p className="text-[11px] text-foreground-muted dark:text-slate-500">Divide cuentas fácil</p>
+        </div>
+      </NavLink>
+    );
+  }
+
+  return (
+    <NavLink
+      to="/"
+      end
+      className="flex items-center gap-2.5 rounded-xl transition hover:opacity-80"
+      aria-label="Ir al inicio"
+    >
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-glow-sm">
+        <AppIcon icon={faUtensils} size="sm" className="text-white" />
+      </div>
+      <span className="text-base font-bold text-foreground dark:text-white">SplitSnap</span>
+    </NavLink>
+  );
+}
+
 export function AppLayout() {
   return (
     <div className="min-h-screen lg:flex">
       {/* Sidebar — desktop */}
       <aside className="glass-chrome hidden w-64 shrink-0 flex-col border-r lg:flex">
         <div className="flex items-center justify-between gap-2 px-5 py-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-white shadow-glow-sm">
-              <AppIcon icon={faUtensils} className="text-white" />
-            </div>
-            <div>
-              <p className="text-base font-bold text-foreground dark:text-white">SplitSnap</p>
-              <p className="text-[11px] text-foreground-muted dark:text-slate-500">Divide cuentas fácil</p>
-            </div>
-          </div>
+          <BrandHomeLink variant="desktop" />
           <ThemeToggle />
         </div>
 
@@ -81,12 +108,7 @@ export function AppLayout() {
       <div className="flex min-h-screen flex-1 flex-col">
         <header className="glass-chrome sticky top-0 z-40 border-b lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-glow-sm">
-                <AppIcon icon={faUtensils} size="sm" className="text-white" />
-              </div>
-              <span className="text-base font-bold text-foreground dark:text-white">SplitSnap</span>
-            </div>
+            <BrandHomeLink />
             <ThemeToggle />
           </div>
         </header>
