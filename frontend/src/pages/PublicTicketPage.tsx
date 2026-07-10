@@ -26,6 +26,20 @@ import { showInfoToast } from '../utils/toast';
 
 type Step = 'welcome' | 'register' | 'select' | 'waiting';
 
+function participantSummary(session: ParticipantSession) {
+  return (
+    <ParticipantMiniSummary
+      productCount={session.selectedProducts.length}
+      subtotal={session.subtotal}
+      taxPortion={session.taxPortion}
+      discountPortion={session.discountPortion}
+      tipPercentage={session.tipPercentage}
+      tip={session.tip}
+      total={session.total}
+    />
+  );
+}
+
 export function PublicTicketPage() {
   const { shareCode = '' } = useParams<{ shareCode: string }>();
   const [step, setStep] = useState<Step>('welcome');
@@ -330,12 +344,7 @@ export function PublicTicketPage() {
                 <p className="text-sm text-foreground-muted dark:text-slate-400">
                   El administrador cerró este ticket. Gracias por usar SplitSnap.
                 </p>
-                <ParticipantMiniSummary
-                  productCount={session.selectedProducts.length}
-                  subtotal={session.subtotal}
-                  tip={session.tip}
-                  total={session.total}
-                />
+                {participantSummary(session)}
               </div>
             ) : ticket.sessionStatus === 'REVIEWING' ? (
               <div className="card space-y-4 text-center">
@@ -346,12 +355,7 @@ export function PublicTicketPage() {
                 <p className="text-sm text-foreground-muted dark:text-slate-400">
                   Tu consumo ya fue enviado al administrador.
                 </p>
-                <ParticipantMiniSummary
-                  productCount={session.selectedProducts.length}
-                  subtotal={session.subtotal}
-                  tip={session.tip}
-                  total={session.total}
-                />
+                {participantSummary(session)}
               </div>
             ) : (
               <div className="card space-y-4 text-center">
@@ -372,12 +376,7 @@ export function PublicTicketPage() {
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
-                <ParticipantMiniSummary
-                  productCount={session.selectedProducts.length}
-                  subtotal={session.subtotal}
-                  tip={session.tip}
-                  total={session.total}
-                />
+                {participantSummary(session)}
               </div>
             )}
 
@@ -433,12 +432,7 @@ export function PublicTicketPage() {
                   ))
                 )}
               </ul>
-              <ParticipantMiniSummary
-                productCount={session.selectedProducts.length}
-                subtotal={session.subtotal}
-                tip={session.tip}
-                total={session.total}
-              />
+              {participantSummary(session)}
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   type="button"

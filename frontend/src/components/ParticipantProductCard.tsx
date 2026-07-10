@@ -103,11 +103,17 @@ export function ParticipantProductCard({
 export function ParticipantMiniSummary({
   productCount,
   subtotal,
+  taxPortion = 0,
+  discountPortion = 0,
+  tipPercentage = 0,
   tip,
   total,
 }: {
   productCount: number;
   subtotal: number;
+  taxPortion?: number;
+  discountPortion?: number;
+  tipPercentage?: number;
   tip: number;
   total: number;
 }) {
@@ -116,14 +122,34 @@ export function ParticipantMiniSummary({
       <p className="text-xs font-semibold uppercase tracking-wide text-foreground-muted">
         Mi consumo
       </p>
-      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-        <span>{productCount} productos</span>
-        <span>Subtotal {formatMoney(subtotal)}</span>
-        {tip > 0 && <span>Propina {formatMoney(tip)}</span>}
-        <span className="font-bold text-primary dark:text-primary-light">
-          Total {formatMoney(total)}
-        </span>
-      </div>
+      <dl className="mt-2 space-y-1 text-sm">
+        <div className="flex justify-between gap-4">
+          <dt className="text-foreground-muted">{productCount} productos</dt>
+          <dd className="font-medium">{formatMoney(subtotal)}</dd>
+        </div>
+        {taxPortion > 0 && (
+          <div className="flex justify-between gap-4">
+            <dt className="text-foreground-muted">Impuesto</dt>
+            <dd>{formatMoney(taxPortion)}</dd>
+          </div>
+        )}
+        {discountPortion > 0 && (
+          <div className="flex justify-between gap-4">
+            <dt className="text-foreground-muted">Descuento</dt>
+            <dd>−{formatMoney(discountPortion)}</dd>
+          </div>
+        )}
+        {tip > 0 && (
+          <div className="flex justify-between gap-4">
+            <dt className="text-foreground-muted">Propina ({tipPercentage}%)</dt>
+            <dd>{formatMoney(tip)}</dd>
+          </div>
+        )}
+        <div className="flex justify-between gap-4 border-t border-border pt-1 font-bold text-primary dark:border-slate-700 dark:text-primary-light">
+          <dt>Total</dt>
+          <dd>{formatMoney(total)}</dd>
+        </div>
+      </dl>
     </div>
   );
 }

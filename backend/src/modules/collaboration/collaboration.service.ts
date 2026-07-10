@@ -19,6 +19,10 @@ import {
   emitTicketUpdated,
   type CollaborationRealtimeEvent,
 } from './collaboration.realtime';
+import {
+  computeParticipantTotals,
+  participantProductPortion,
+} from '../calculation/participantTotals';
 
 const ACTIVE_SHARE_STATUSES = new Set<string>([
   TICKET_SESSION_STATUS.WAITING_FOR_PARTICIPANTS,
@@ -181,17 +185,32 @@ function serializeParticipantSession(
 
   const selectedProducts = ticket.products
     .filter((p) => selectedProductIds.includes(p.id))
-    .map((p) => ({
-      id: p.id,
-      name: p.name,
-      unitPrice: Number(p.unitPrice),
-      emoji: p.emoji,
-    }));
+    .map((p) => {
+      const amount =
+        participantProductPortion(
+          Number(p.unitPrice),
+          p.assignments,
+          tp.participantId,
+        ) ?? Number(p.unitPrice);
 
-  const subtotal = selectedProducts.reduce((sum, p) => sum + p.unitPrice, 0);
-  const tipPct =
-    ticket.globalTipPercentage != null ? Number(ticket.globalTipPercentage) : 0;
-  const tip = subtotal * (tipPct / 100);
+      return {
+        id: p.id,
+        name: p.name,
+        unitPrice: amount,
+        emoji: p.emoji,
+      };
+    });
+
+  const totals = computeParticipantTotals(ticket).find(
+    (row) => row.ticketParticipantId === ticketParticipantId,
+  );
+
+  const subtotal = totals?.subtotal ?? 0;
+  const taxPortion = totals?.taxPortion ?? 0;
+  const discountPortion = totals?.discountPortion ?? 0;
+  const tipPercentage = totals?.tipPercentage ?? 0;
+  const tip = totals?.tip ?? 0;
+  const total = totals?.total ?? 0;
 
   return {
     ticketParticipantId: tp.id,
@@ -203,9 +222,11 @@ function serializeParticipantSession(
     selectedProductIds,
     selectedProducts,
     subtotal,
-    tipPercentage: tipPct,
+    taxPortion,
+    discountPortion,
+    tipPercentage,
     tip,
-    total: subtotal + tip,
+    total,
     canEdit:
       tp.sessionStatus !== PARTICIPANT_SESSION_STATUS.COMPLETED ||
       ticket.sessionStatus === TICKET_SESSION_STATUS.REOPENED,

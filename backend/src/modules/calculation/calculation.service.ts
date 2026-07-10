@@ -5,6 +5,7 @@ import {
   PARTICIPANT_SESSION_STATUS,
   PAYMENT_STATUS,
 } from '../collaboration/collaboration.types';
+import { computeParticipantTotals } from './participantTotals';
 
 export type ParticipantSummary = {
   ticketParticipantId: string;
@@ -73,76 +74,45 @@ export class CalculationService {
       .filter((p) => p.assignments.length === 0)
       .map((p) => ({ id: p.id, name: p.name }));
 
-    const subtotals = new Map<string, number>();
     const names = new Map<string, string | null>();
-
     for (const tp of ticket.ticketParticipants) {
-      subtotals.set(tp.participantId, 0);
       names.set(tp.participantId, tp.displayName ?? tp.participant.name);
     }
-
     for (const product of ticket.products) {
-      if (!product.assignments.length) continue;
-
-      const shareSum = product.assignments.reduce(
-        (acc, a) => acc + Number(a.shareRatio),
-        0,
-      );
-      const unitPrice = Number(product.unitPrice);
-
       for (const assignment of product.assignments) {
-        const portion = unitPrice * (Number(assignment.shareRatio) / shareSum);
-        const current = subtotals.get(assignment.participantId) ?? 0;
-        subtotals.set(assignment.participantId, current + portion);
         names.set(assignment.participantId, assignment.participant.name);
       }
     }
 
-    const ticketSubtotal = round2(
-      [...subtotals.values()].reduce((a, b) => a + b, 0),
-    );
+    const computed = computeParticipantTotals(ticket);
+    const ticketSubtotal = round2(computed.reduce((acc, row) => acc + row.subtotal, 0));
     const tax = Number(ticket.tax ?? 0);
     const discount = Number(ticket.discount ?? 0);
     const globalTip = ticket.globalTipPercentage != null
       ? Number(ticket.globalTipPercentage)
       : 0;
 
-    const participants: ParticipantSummary[] = [];
-
-    for (const tp of ticket.ticketParticipants) {
-      const subtotal = round2(subtotals.get(tp.participantId) ?? 0);
-      const taxPortion =
-        ticketSubtotal > 0 ? round2((subtotal / ticketSubtotal) * tax) : 0;
-      const discountPortion =
-        ticketSubtotal > 0 ? round2((subtotal / ticketSubtotal) * discount) : 0;
-      const subtotalWithTax = round2(subtotal + taxPortion - discountPortion);
-
-      let tipPercentage = globalTip;
-      if (ticket.tipMode === 'INDIVIDUAL') {
-        tipPercentage =
-          tp.individualTipPercentage != null
-            ? Number(tp.individualTipPercentage)
-            : globalTip;
+    const participants: ParticipantSummary[] = computed.map((row) => {
+      const tp = ticket.ticketParticipants.find((item) => item.id === row.ticketParticipantId);
+      if (!tp) {
+        throw new AppError('Participant not found in ticket', 'INTERNAL_ERROR', 500);
       }
 
-      const tip = round2(subtotalWithTax * (tipPercentage / 100));
-      const total = round2(subtotalWithTax + tip);
-
-      participants.push({
-        ticketParticipantId: tp.id,
-        participantId: tp.participantId,
-        name: names.get(tp.participantId) ?? tp.participant.name,
-        subtotal,
-        taxPortion,
-        discountPortion,
-        subtotalWithTax,
-        tip,
-        total,
-        tipPercentage,
+      return {
+        ticketParticipantId: row.ticketParticipantId,
+        participantId: row.participantId,
+        name: names.get(row.participantId) ?? tp.participant.name,
+        subtotal: row.subtotal,
+        taxPortion: row.taxPortion,
+        discountPortion: row.discountPortion,
+        subtotalWithTax: row.subtotalWithTax,
+        tip: row.tip,
+        total: row.total,
+        tipPercentage: row.tipPercentage,
         paymentStatus: tp.paymentStatus,
         sessionStatus: tp.sessionStatus,
-      });
-    }
+      };
+    });
 
     const grandTotal = round2(participants.reduce((a, p) => a + p.total, 0));
     const ticketTotal = Number(ticket.total ?? 0);

@@ -245,6 +245,8 @@ export type ParticipantSession = {
     emoji: string | null;
   }>;
   subtotal: number;
+  taxPortion: number;
+  discountPortion: number;
   tipPercentage: number;
   tip: number;
   total: number;

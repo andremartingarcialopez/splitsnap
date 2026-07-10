@@ -25,7 +25,7 @@ export function SelectionFloatingBar({
             Mi selección
           </p>
           <p className="text-sm text-foreground dark:text-white">
-            {productCount} producto{productCount === 1 ? '' : 's'} · Subtotal{' '}
+            {productCount} producto{productCount === 1 ? '' : 's'} · Subtotal productos{' '}
             {formatMoney(subtotal)}
           </p>
           <p className="text-base font-bold text-primary dark:text-primary-light">
