@@ -379,7 +379,7 @@ export const ticketsApi = {
   async updateProduct(
     ticketId: string,
     productId: string,
-    input: { name?: string; unitPrice?: number },
+    input: { name?: string; unitPrice?: number; scope?: 'single' | 'group' },
   ): Promise<Product> {
     try {
       const { data } = await api.put<ApiSuccess<Product>>(

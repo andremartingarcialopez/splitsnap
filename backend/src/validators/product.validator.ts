@@ -6,10 +6,14 @@ export const createProductSchema = z.object({
   unitPrice: z.coerce.number().positive('unitPrice must be > 0'),
 });
 
+export const updateProductScopeSchema = z.enum(['single', 'group']);
+
 export const updateProductSchema = z
   .object({
     name: z.string().trim().min(1).max(150).optional(),
     unitPrice: z.coerce.number().positive('unitPrice must be > 0').optional(),
+    /** single = solo esta línea; group = mismo lineGroupId o mismo nombre en el ticket */
+    scope: updateProductScopeSchema.optional().default('single'),
   })
   .refine((d) => d.name !== undefined || d.unitPrice !== undefined, {
     message: 'At least one of name or unitPrice is required',

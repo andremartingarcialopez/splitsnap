@@ -7,6 +7,7 @@ import {
   createTicketSchema,
   linkTicketGroupSchema,
 } from '../validators/ticket.validator';
+import { updateProductSchema } from '../validators/product.validator';
 import {
   updateParticipantTipSchema,
   updateTicketTipSchema,
@@ -243,7 +244,7 @@ export class TicketController {
 
   async updateProduct(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const body = productSchema.parse(req.body);
+      const body = updateProductSchema.parse(req.body);
       const product = await ticketService.updateProduct(
         req.params.id,
         req.params.productId,

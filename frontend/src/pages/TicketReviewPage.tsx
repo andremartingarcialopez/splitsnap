@@ -368,6 +368,7 @@ export function TicketReviewPage() {
               <ProductScrollAnchor key={product.id} productId={product.id}>
                 <ProductReviewCard
                   product={product}
+                  allProducts={ticket.products ?? []}
                   saving={saving}
                   onSave={async (input) => {
                     if (!id) return;

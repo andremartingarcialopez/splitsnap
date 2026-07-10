@@ -725,7 +725,7 @@ export class TicketService {
   async updateProduct(
     ticketId: string,
     productId: string,
-    input: { name?: string; unitPrice?: number },
+    input: { name?: string; unitPrice?: number; scope?: 'single' | 'group' },
   ) {
     const product = await prisma.product.findFirst({
       where: { id: productId, ticketId },
@@ -737,15 +737,24 @@ export class TicketService {
       throw new AppError('unitPrice must be > 0', 'VALIDATION_ERROR', 400);
     }
 
-    await prisma.product.update({
-      where: { id: productId },
-      data: {
-        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
-        ...(input.unitPrice !== undefined
-          ? { unitPrice: decimal(input.unitPrice)! }
-          : {}),
-      },
-    });
+    const scope = input.scope ?? 'single';
+    const patch: { name?: string; unitPrice?: Prisma.Decimal } = {};
+    if (input.name !== undefined) patch.name = input.name.trim();
+    if (input.unitPrice !== undefined) patch.unitPrice = decimal(input.unitPrice)!;
+
+    if (Object.keys(patch).length === 0) {
+      throw new AppError('Nothing to update', 'VALIDATION_ERROR', 400);
+    }
+
+    if (scope === 'group') {
+      const groupWhere = product.lineGroupId
+        ? { ticketId, lineGroupId: product.lineGroupId }
+        : { ticketId, name: product.name };
+
+      await prisma.product.updateMany({ where: groupWhere, data: patch });
+    } else {
+      await prisma.product.update({ where: { id: productId }, data: patch });
+    }
 
     await syncTicketTotalsFromProducts(ticketId);
 
