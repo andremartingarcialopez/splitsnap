@@ -8,15 +8,21 @@ import { GlobalTipSelector } from '../components/GlobalTipSelector';
 import { LoadingState } from '../components/LoadingState';
 import { PageHeader } from '../components/PageHeader';
 import { ProductReviewCard } from '../components/ProductReviewCard';
+import {
+  ProductScrollAnchor,
+  ProductScrollIndex,
+} from '../components/ProductScrollIndex';
 import { ScanProcessingOverlay } from '../components/ScanProcessingOverlay';
 import { TicketImageSourcePicker } from '../components/TicketImageSourcePicker';
 import { AVATAR_GALLERY } from '../constants/avatars';
 import { useConfirm } from '../context/ConfirmContext';
 import { useTicket } from '../hooks/useTicket';
 import { ApiClientError, assignmentsApi, ticketsApi } from '../services/api';
+import type { Product } from '../types/domain';
 import { prepareTicketImageForUpload } from '../utils/compressTicketImage';
 import { formatMoney } from '../utils/money';
 import { getScanErrorMessage } from '../utils/scanErrorMessage';
+import { unitPriceForSplit } from '../utils/splitProductLine';
 import { showSuccessToast } from '../utils/toast';
 
 type WizardStep = 'products' | 'settings' | 'selection';
@@ -81,6 +87,11 @@ export function TicketReviewPage() {
         .map((p) => p.id),
     );
   }, [adminParticipant, ticket?.products]);
+
+  const productScrollItems = useMemo(
+    () => (ticket?.products ?? []).map((p) => ({ id: p.id, label: p.name })),
+    [ticket?.products],
+  );
 
   const productsSubtotal = useMemo(
     () => (ticket?.products ?? []).reduce((sum, p) => sum + p.unitPrice, 0),
@@ -159,6 +170,27 @@ export function TicketReviewPage() {
       await reload({ silent: true });
     } catch (err) {
       setActionError(err instanceof ApiClientError ? err.message : 'No se pudo agregar.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /** Divide una línea en N productos con precio unitario (ej. 3 refrescos de $120 → 3×$40). */
+  async function handleSplitProduct(product: Product, quantity: number) {
+    if (!id || quantity < 2) return;
+    const unitPrice = unitPriceForSplit(product.unitPrice, quantity);
+    setSaving(true);
+    setActionError(null);
+    try {
+      await ticketsApi.deleteProduct(id, product.id);
+      await Promise.all(
+        Array.from({ length: quantity }, () =>
+          ticketsApi.addProduct(id, { name: product.name, unitPrice }),
+        ),
+      );
+      await reload({ silent: true });
+    } catch (err) {
+      setActionError(err instanceof ApiClientError ? err.message : 'No se pudo dividir el producto.');
     } finally {
       setSaving(false);
     }
@@ -329,31 +361,37 @@ export function TicketReviewPage() {
             )}
           </div>
 
+          <ProductScrollIndex items={productScrollItems} />
+
           <div className="space-y-3">
             {(ticket.products ?? []).map((product) => (
-              <ProductReviewCard
-                key={product.id}
-                product={product}
-                saving={saving}
-                onSave={async (input) => {
-                  if (!id) return;
-                  await ticketsApi.updateProduct(id, product.id, input);
-                  await reload({ silent: true });
-                }}
-                onDelete={async () => {
-                  if (!id) return;
-                  await ticketsApi.deleteProduct(id, product.id);
-                  await reload({ silent: true });
-                }}
-                onDuplicate={async () => {
-                  if (!id) return;
-                  await ticketsApi.addProduct(id, {
-                    name: product.name,
-                    unitPrice: product.unitPrice,
-                  });
-                  await reload({ silent: true });
-                }}
-              />
+              <ProductScrollAnchor key={product.id} productId={product.id}>
+                <ProductReviewCard
+                  product={product}
+                  saving={saving}
+                  onSave={async (input) => {
+                    if (!id) return;
+                    await ticketsApi.updateProduct(id, product.id, input);
+                    await reload({ silent: true });
+                  }}
+                  onDelete={async () => {
+                    if (!id) return;
+                    await ticketsApi.deleteProduct(id, product.id);
+                    await reload({ silent: true });
+                  }}
+                  onDuplicate={async () => {
+                    if (!id) return;
+                    await ticketsApi.addProduct(id, {
+                      name: product.name,
+                      unitPrice: product.unitPrice,
+                    });
+                    await reload({ silent: true });
+                  }}
+                  onSplit={async (quantity) => {
+                    await handleSplitProduct(product, quantity);
+                  }}
+                />
+              </ProductScrollAnchor>
             ))}
           </div>
 
@@ -479,15 +517,18 @@ export function TicketReviewPage() {
             </p>
           </div>
 
+          <ProductScrollIndex items={productScrollItems} />
+
           <div className="space-y-2">
             {(ticket.products ?? []).map((product) => (
-              <AdminProductSelectCard
-                key={product.id}
-                product={product}
-                selected={adminSelectedIds.has(product.id)}
-                disabled={saving}
-                onToggle={() => void toggleAdminProduct(product.id)}
-              />
+              <ProductScrollAnchor key={product.id} productId={product.id}>
+                <AdminProductSelectCard
+                  product={product}
+                  selected={adminSelectedIds.has(product.id)}
+                  disabled={saving}
+                  onToggle={() => void toggleAdminProduct(product.id)}
+                />
+              </ProductScrollAnchor>
             ))}
           </div>
 

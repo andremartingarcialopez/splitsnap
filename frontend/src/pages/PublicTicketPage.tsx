@@ -11,6 +11,10 @@ import {
   ParticipantMiniSummary,
   ParticipantProductCard,
 } from '../components/ParticipantProductCard';
+import {
+  ProductScrollAnchor,
+  ProductScrollIndex,
+} from '../components/ProductScrollIndex';
 import { PublicTicketLayout } from '../components/PublicTicketLayout';
 import { AVATAR_GALLERY } from '../constants/avatars';
 import { useTicketRealtime } from '../hooks/useTicketRealtime';
@@ -122,6 +126,11 @@ export function PublicTicketPage() {
   const selectedSet = useMemo(
     () => new Set(session?.selectedProductIds ?? []),
     [session?.selectedProductIds],
+  );
+
+  const productScrollItems = useMemo(
+    () => (ticket?.products ?? []).map((p) => ({ id: p.id, label: p.name })),
+    [ticket?.products],
   );
 
   async function handleJoin(existingId?: string) {
@@ -310,15 +319,18 @@ export function PublicTicketPage() {
               </Alert>
             )}
 
+            <ProductScrollIndex items={productScrollItems} bottomInset={96} />
+
             <div className="space-y-2 pb-4">
               {ticket.products.map((product) => (
-                <ParticipantProductCard
-                  key={product.id}
-                  product={product}
-                  selected={selectedSet.has(product.id)}
-                  disabled={busy}
-                  onToggle={() => void handleToggle(product.id)}
-                />
+                <ProductScrollAnchor key={product.id} productId={product.id}>
+                  <ParticipantProductCard
+                    product={product}
+                    selected={selectedSet.has(product.id)}
+                    disabled={busy}
+                    onToggle={() => void handleToggle(product.id)}
+                  />
+                </ProductScrollAnchor>
               ))}
             </div>
 

@@ -7,6 +7,7 @@ export {
   faCircle,
   faClipboardList,
   faClock,
+  faDivide,
   faEllipsis,
   faHouse,
   faImage,
