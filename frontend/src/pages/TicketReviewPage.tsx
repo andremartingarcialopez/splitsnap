@@ -22,6 +22,7 @@ import type { Product } from '../types/domain';
 import { prepareTicketImageForUpload } from '../utils/compressTicketImage';
 import { formatMoney } from '../utils/money';
 import { getScanErrorMessage } from '../utils/scanErrorMessage';
+import { sortProductsByName } from '../utils/sortProductsByName';
 import { unitPriceForSplit } from '../utils/splitProductLine';
 import { showSuccessToast } from '../utils/toast';
 
@@ -88,9 +89,14 @@ export function TicketReviewPage() {
     );
   }, [adminParticipant, ticket?.products]);
 
-  const productScrollItems = useMemo(
-    () => (ticket?.products ?? []).map((p) => ({ id: p.id, label: p.name })),
+  const productsSortedByName = useMemo(
+    () => sortProductsByName(ticket?.products ?? []),
     [ticket?.products],
+  );
+
+  const productScrollItems = useMemo(
+    () => productsSortedByName.map((p) => ({ id: p.id, label: p.name })),
+    [productsSortedByName],
   );
 
   const productsSubtotal = useMemo(
@@ -364,7 +370,7 @@ export function TicketReviewPage() {
           <ProductScrollIndex items={productScrollItems} />
 
           <div className="space-y-3">
-            {(ticket.products ?? []).map((product) => (
+            {productsSortedByName.map((product) => (
               <ProductScrollAnchor key={product.id} productId={product.id}>
                 <ProductReviewCard
                   product={product}
@@ -521,7 +527,7 @@ export function TicketReviewPage() {
           <ProductScrollIndex items={productScrollItems} />
 
           <div className="space-y-2">
-            {(ticket.products ?? []).map((product) => (
+            {productsSortedByName.map((product) => (
               <ProductScrollAnchor key={product.id} productId={product.id}>
                 <AdminProductSelectCard
                   product={product}

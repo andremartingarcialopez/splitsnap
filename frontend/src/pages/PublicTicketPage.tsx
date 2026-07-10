@@ -21,6 +21,7 @@ import { useTicketRealtime } from '../hooks/useTicketRealtime';
 import { ApiClientError, publicApi } from '../services/publicApi';
 import type { ParticipantSession, PublicTicket, TicketUpdatedPayload } from '../types/domain';
 import { formatMoney } from '../utils/money';
+import { sortProductsByName } from '../utils/sortProductsByName';
 import {
   clearParticipantSession,
   loadParticipantSession,
@@ -128,9 +129,14 @@ export function PublicTicketPage() {
     [session?.selectedProductIds],
   );
 
-  const productScrollItems = useMemo(
-    () => (ticket?.products ?? []).map((p) => ({ id: p.id, label: p.name })),
+  const productsSortedByName = useMemo(
+    () => sortProductsByName(ticket?.products ?? []),
     [ticket?.products],
+  );
+
+  const productScrollItems = useMemo(
+    () => productsSortedByName.map((p) => ({ id: p.id, label: p.name })),
+    [productsSortedByName],
   );
 
   async function handleJoin(existingId?: string) {
@@ -322,7 +328,7 @@ export function PublicTicketPage() {
             <ProductScrollIndex items={productScrollItems} bottomInset={96} />
 
             <div className="space-y-2 pb-4">
-              {ticket.products.map((product) => (
+              {productsSortedByName.map((product) => (
                 <ProductScrollAnchor key={product.id} productId={product.id}>
                   <ParticipantProductCard
                     product={product}
