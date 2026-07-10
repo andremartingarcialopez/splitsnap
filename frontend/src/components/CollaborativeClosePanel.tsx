@@ -123,7 +123,6 @@ export function CollaborativeClosePanel({
     }
   }
 
-  const paidCount = summary.participants.filter((p) => p.paymentStatus === 'PAID').length;
   const selectedParticipant =
     summary.participants.find((p) => p.ticketParticipantId === selectedTpId) ?? null;
   const canShowConsumption = products.length > 0;
@@ -150,31 +149,6 @@ export function CollaborativeClosePanel({
       </div>
 
       {error && <Alert tone="error">{error}</Alert>}
-
-      {sessionStatus === 'REVIEWING' && (
-        <Alert tone="info">
-          Todos terminaron su selección. Revisa montos, marca pagos y cierra cuando estén al día.
-        </Alert>
-      )}
-
-      {!summary.canClose && sessionStatus !== 'FINISHED' && (
-        <Alert tone="warning">
-          {!summary.allParticipantsCompleted
-            ? 'Falta que todos completen su selección.'
-            : !summary.allParticipantsPaid
-              ? `Pagos pendientes: ${paidCount} de ${summary.participants.length} marcados como pagados.`
-              : summary.unassignedProducts.length > 0
-                ? `Hay ${summary.unassignedProducts.length} producto(s) sin asignar.`
-                : 'Revisa el ticket antes de cerrar.'}
-        </Alert>
-      )}
-
-      {summary.varianceWarning && summary.varianceAmount != null && (
-        <Alert tone="warning">
-          El total calculado ({formatMoney(summary.grandTotal)}) difiere del ticket (
-          {formatMoney(summary.ticketTotal)}) por {formatMoney(summary.varianceAmount)}.
-        </Alert>
-      )}
 
       <div className="space-y-2 rounded-2xl border border-border bg-surface-muted/60 p-4 dark:border-slate-800 dark:bg-slate-800/30">
         <div>
