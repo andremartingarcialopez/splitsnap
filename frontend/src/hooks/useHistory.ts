@@ -26,5 +26,9 @@ export function useHistory() {
     void reload();
   }, [reload]);
 
-  return { items, status, error, reload };
+  const removeItem = useCallback((id: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  return { items, status, error, reload, removeItem };
 }

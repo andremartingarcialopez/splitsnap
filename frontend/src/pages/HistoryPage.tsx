@@ -1,9 +1,15 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Alert } from '../components/Alert';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { HistoryListSkeleton } from '../components/Skeleton';
 import { PageHeader } from '../components/PageHeader';
+import { useConfirm } from '../context/ConfirmContext';
 import { useHistory } from '../hooks/useHistory';
+import { ApiClientError, ticketsApi } from '../services/api';
+import type { HistoryListItem } from '../types/domain';
+import { showSuccessToast } from '../utils/toast';
 
 function money(n: number | null | undefined) {
   if (n == null) return '—';
@@ -15,7 +21,27 @@ function money(n: number | null | undefined) {
 
 export function HistoryPage() {
   const navigate = useNavigate();
-  const { items, status, error, reload } = useHistory();
+  const { confirm } = useConfirm();
+  const { items, status, error, reload, removeItem } = useHistory();
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  async function handleDelete(item: HistoryListItem) {
+    const label = item.restaurantName || item.title;
+    const ok = await confirm({
+      title: 'Eliminar del historial',
+      message: `¿Eliminar «${label}»? Se borrará el ticket y su resumen guardado.`,
+      tone: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await ticketsApi.remove(item.id);
+      removeItem(item.id);
+      showSuccessToast('Ticket eliminado del historial.');
+      setActionError(null);
+    } catch (err) {
+      setActionError(err instanceof ApiClientError ? err.message : 'No se pudo eliminar.');
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -23,6 +49,8 @@ export function HistoryPage() {
         title="Historial"
         subtitle="Tickets finalizados con resumen de división."
       />
+
+      {actionError && <Alert tone="error">{actionError}</Alert>}
 
       {status === 'loading' && <HistoryListSkeleton />}
 
@@ -73,12 +101,21 @@ export function HistoryPage() {
                       {money(item.grandTotal)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link
-                        to={`/history/${item.id}`}
-                        className="btn-secondary touch-target inline-flex px-3 text-xs"
-                      >
-                        Ver detalle
-                      </Link>
+                      <div className="inline-flex flex-col items-end gap-2">
+                        <Link
+                          to={`/history/${item.id}`}
+                          className="btn-secondary touch-target inline-flex px-3 text-xs"
+                        >
+                          Ver detalle
+                        </Link>
+                        <button
+                          type="button"
+                          className="btn-danger btn-sm touch-target"
+                          onClick={() => void handleDelete(item)}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -108,6 +145,13 @@ export function HistoryPage() {
                 >
                   Ver detalle
                 </Link>
+                <button
+                  type="button"
+                  className="btn-danger btn-sm touch-target block w-full text-center text-xs"
+                  onClick={() => void handleDelete(item)}
+                >
+                  Eliminar
+                </button>
               </article>
             ))}
           </div>

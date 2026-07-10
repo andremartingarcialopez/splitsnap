@@ -90,7 +90,31 @@
   }
 
   .btn-danger {
-    @apply btn bg-destructive text-white hover:bg-destructive-hover;
+    @apply btn border text-destructive backdrop-blur-md backdrop-saturate-150;
+    border-color: rgb(239 68 68 / 0.38);
+    background-color: rgb(254 226 226 / 0.52);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.45),
+      0 4px 16px -6px rgb(239 68 68 / 0.14);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    border-color: rgb(239 68 68 / 0.5);
+    background-color: rgb(254 202 202 / 0.68);
+  }
+
+  html.dark .btn-danger {
+    @apply text-red-300;
+    border-color: rgb(239 68 68 / 0.24);
+    background-color: rgb(127 29 29 / 0.38);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 4px 20px -8px rgb(239 68 68 / 0.2);
+  }
+
+  html.dark .btn-danger:hover:not(:disabled) {
+    border-color: rgb(239 68 68 / 0.36);
+    background-color: rgb(153 27 27 / 0.52);
   }
 
   .btn-sm {

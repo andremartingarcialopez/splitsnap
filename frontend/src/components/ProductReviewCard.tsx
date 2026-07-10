@@ -82,7 +82,7 @@ export function ProductReviewCard({
             <button type="button" className="btn-secondary btn-sm" disabled={saving} onClick={() => void onDuplicate()}>
               Duplicar
             </button>
-            <button type="button" className="btn-ghost btn-sm text-destructive" disabled={saving} onClick={() => void onDelete()}>
+            <button type="button" className="btn-danger btn-sm" disabled={saving} onClick={() => void onDelete()}>
               Eliminar
             </button>
           </div>
