@@ -157,7 +157,6 @@ export function AssignmentPanel({
             >
               <span className="text-foreground dark:text-slate-200">
                 {a.participant?.name || 'Sin nombre'}
-                <span className="ml-2 text-xs text-foreground-muted">ratio {a.shareRatio}</span>
               </span>
               <button
                 type="button"

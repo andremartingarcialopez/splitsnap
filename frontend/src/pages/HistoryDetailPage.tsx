@@ -159,7 +159,7 @@ export function HistoryDetailPage() {
                   <ul className="mt-2 space-y-1 text-xs text-muted">
                     {(p.assignments ?? []).map((a) => (
                       <li key={a.id}>
-                        {a.participant?.name || 'Participante'} · ratio {a.shareRatio}
+                        {a.participant?.name || 'Participante'}
                       </li>
                     ))}
                   </ul>
