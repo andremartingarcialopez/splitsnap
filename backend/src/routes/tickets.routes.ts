@@ -17,6 +17,13 @@ ticketRouter.post(
   (req, res, next) => ticketController.process(req, res, next),
 );
 
+ticketRouter.post(
+  '/:id/reprocess',
+  pipelineRateLimit,
+  uploadTicketImage,
+  (req, res, next) => ticketController.reprocess(req, res, next),
+);
+
 ticketRouter.post('/manual', (req, res, next) =>
   ticketController.createManual(req, res, next),
 );

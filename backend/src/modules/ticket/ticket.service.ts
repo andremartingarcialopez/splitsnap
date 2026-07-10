@@ -153,6 +153,17 @@ function serializeTicketListItem(
 /**
  * TicketService — CRUD US-004 + pipeline US-003.
  */
+const REPROCESS_SESSION_STATUSES = new Set<string>([
+  TICKET_SESSION_STATUS.DRAFT,
+  TICKET_SESSION_STATUS.CREATED,
+]);
+
+type ScanPipelineResult = {
+  ticket: Awaited<ReturnType<TicketService['getById']>>;
+  products: Awaited<ReturnType<TicketService['getById']>>['products'];
+  pipeline: { mock: boolean };
+};
+
 export class TicketService {
   async list() {
     const tickets = await prisma.ticket.findMany({
@@ -557,6 +568,125 @@ export class TicketService {
     return this.getById(ticketId);
   }
 
+  /** Solo antes de iniciar división colaborativa. */
+  private async assertCanReprocess(ticketId: string) {
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      throw new AppError('Ticket not found', 'NOT_FOUND', 404);
+    }
+    if (ticket.finalizedAt) {
+      throw new AppError('Ticket already finalized', 'VALIDATION_ERROR', 409);
+    }
+    if (ticket.shareCode) {
+      throw new AppError(
+        'No se puede reescanear: la división ya inició',
+        'VALIDATION_ERROR',
+        409,
+      );
+    }
+    if (!REPROCESS_SESSION_STATUSES.has(ticket.sessionStatus)) {
+      throw new AppError(
+        'No se puede reescanear en el estado actual del ticket',
+        'VALIDATION_ERROR',
+        409,
+      );
+    }
+    return ticket;
+  }
+
+  private async applyScanPipeline(
+    ticketId: string,
+    image: OcrImageInput,
+    imageUrl: string,
+  ): Promise<ScanPipelineResult> {
+    const { cleaned, text } = await ocrService.extractFromImage(image);
+    const parsedRaw = await aiService.parseTicket(cleaned);
+    const parsed = normalizeParsedTicket(parsedRaw);
+
+    const restaurant = parsed.restaurantName?.trim() || null;
+    const title = restaurant || 'Ticket digitalizado';
+    const productsSum = parsed.normalizedProducts.reduce(
+      (acc, item) => acc + item.unitPrice,
+      0,
+    );
+    const initialTotals = buildInitialTicketTotals(productsSum, {
+      tax: parsed.tax,
+      discount: parsed.discount,
+      total: parsed.total,
+      printedTotal: parsed.total,
+    });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.product.deleteMany({ where: { ticketId } });
+      await tx.ticket.update({
+        where: { id: ticketId },
+        data: {
+          title,
+          restaurantName: restaurant,
+          ticketImageUrl: imageUrl,
+          ...ticketTotalsToPrismaData(initialTotals),
+          processingStatus: 'COMPLETED',
+          sessionStatus: TICKET_SESSION_STATUS.CREATED,
+          rawOcrText: text,
+          failureReason: null,
+          products: {
+            create: parsed.normalizedProducts.map((item) => ({
+              name: item.name,
+              unitPrice: decimal(item.unitPrice)!,
+              detectedByAI: true,
+              confidenceScore:
+                item.confidenceScore != null
+                  ? new Prisma.Decimal(item.confidenceScore)
+                  : null,
+              lineGroupId: item.lineGroupId,
+              isIndivisible: item.isIndivisible,
+            })),
+          },
+        },
+      });
+    });
+
+    const full = await this.getById(ticketId);
+    return {
+      ticket: full,
+      products: full.products,
+      pipeline: { mock: false },
+    };
+  }
+
+  private async failScanPipeline(ticketId: string, err: unknown): Promise<never> {
+    const message =
+      err instanceof AppError
+        ? err.message
+        : err instanceof Error
+          ? err.message
+          : 'Pipeline failed';
+    const code = err instanceof AppError ? err.code : 'AI_PARSE_ERROR';
+
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        processingStatus: 'FAILED',
+        failureReason: message.slice(0, 500),
+        title: 'Ticket fallido — ingreso manual disponible',
+      },
+    });
+
+    const failed = await this.getById(ticketId);
+
+    throw new AppError(
+      message,
+      code,
+      err instanceof AppError ? err.statusCode : 502,
+      {
+        ticketId: failed.id,
+        processingStatus: 'FAILED',
+        allowManualEntry: true,
+        ticket: failed,
+      },
+    );
+  }
+
   async processImage(image: OcrImageInput) {
     const saved = await saveTicketImage(image);
 
@@ -570,89 +700,25 @@ export class TicketService {
     });
 
     try {
-      const { cleaned, text } = await ocrService.extractFromImage(image);
-      const parsedRaw = await aiService.parseTicket(cleaned);
-      const parsed = normalizeParsedTicket(parsedRaw);
-
-      const restaurant = parsed.restaurantName?.trim() || null;
-      const title = restaurant || 'Ticket digitalizado';
-      const productsSum = parsed.normalizedProducts.reduce(
-        (acc, item) => acc + item.unitPrice,
-        0,
-      );
-      const initialTotals = buildInitialTicketTotals(productsSum, {
-        tax: parsed.tax,
-        discount: parsed.discount,
-        total: parsed.total,
-        printedTotal: parsed.total,
-      });
-
-      await prisma.$transaction(async (tx) => {
-        await tx.product.deleteMany({ where: { ticketId: ticket.id } });
-        await tx.ticket.update({
-          where: { id: ticket.id },
-          data: {
-            title,
-            restaurantName: restaurant,
-            ...ticketTotalsToPrismaData(initialTotals),
-            processingStatus: 'COMPLETED',
-            sessionStatus: TICKET_SESSION_STATUS.CREATED,
-            rawOcrText: text,
-            failureReason: null,
-            products: {
-              create: parsed.normalizedProducts.map((item) => ({
-                name: item.name,
-                unitPrice: decimal(item.unitPrice)!,
-                detectedByAI: true,
-                confidenceScore:
-                  item.confidenceScore != null
-                    ? new Prisma.Decimal(item.confidenceScore)
-                    : null,
-                lineGroupId: item.lineGroupId,
-                isIndivisible: item.isIndivisible,
-              })),
-            },
-          },
-        });
-      });
-
-      const full = await this.getById(ticket.id);
-      return {
-        ticket: full,
-        products: full.products,
-        pipeline: { mock: false as boolean },
-      };
+      return await this.applyScanPipeline(ticket.id, image, saved.publicUrl);
     } catch (err) {
-      const message =
-        err instanceof AppError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : 'Pipeline failed';
-      const code = err instanceof AppError ? err.code : 'AI_PARSE_ERROR';
+      return this.failScanPipeline(ticket.id, err);
+    }
+  }
 
-      await prisma.ticket.update({
-        where: { id: ticket.id },
-        data: {
-          processingStatus: 'FAILED',
-          failureReason: message.slice(0, 500),
-          title: 'Ticket fallido — ingreso manual disponible',
-        },
-      });
+  async reprocessImage(ticketId: string, image: OcrImageInput) {
+    await this.assertCanReprocess(ticketId);
+    const saved = await saveTicketImage(image);
 
-      const failed = await this.getById(ticket.id);
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { processingStatus: 'PROCESSING', failureReason: null },
+    });
 
-      throw new AppError(
-        message,
-        code,
-        err instanceof AppError ? err.statusCode : 502,
-        {
-          ticketId: failed.id,
-          processingStatus: 'FAILED',
-          allowManualEntry: true,
-          ticket: failed,
-        },
-      );
+    try {
+      return await this.applyScanPipeline(ticketId, image, saved.publicUrl);
+    } catch (err) {
+      return this.failScanPipeline(ticketId, err);
     }
   }
 

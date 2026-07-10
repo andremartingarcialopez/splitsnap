@@ -8,10 +8,15 @@ import { GlobalTipSelector } from '../components/GlobalTipSelector';
 import { LoadingState } from '../components/LoadingState';
 import { PageHeader } from '../components/PageHeader';
 import { ProductReviewCard } from '../components/ProductReviewCard';
+import { ScanProcessingOverlay } from '../components/ScanProcessingOverlay';
+import { TicketImageSourcePicker } from '../components/TicketImageSourcePicker';
 import { AVATAR_GALLERY } from '../constants/avatars';
+import { useConfirm } from '../context/ConfirmContext';
 import { useTicket } from '../hooks/useTicket';
 import { ApiClientError, assignmentsApi, ticketsApi } from '../services/api';
+import { prepareTicketImageForUpload } from '../utils/compressTicketImage';
 import { formatMoney } from '../utils/money';
+import { getScanErrorMessage } from '../utils/scanErrorMessage';
 import { showSuccessToast } from '../utils/toast';
 
 type WizardStep = 'products' | 'settings' | 'selection';
@@ -23,13 +28,19 @@ const POST_DIVISION = new Set([
   'FINISHED',
 ]);
 
+/** Estados en los que el backend permite reescanear el mismo ticket. */
+const RESCAN_SESSION = new Set(['DRAFT', 'CREATED']);
+
 export function TicketReviewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { confirm } = useConfirm();
   const { ticket, status, error, reload } = useTicket(id);
   const [step, setStep] = useState<WizardStep>('products');
   const [saving, setSaving] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [rescanError, setRescanError] = useState<string | null>(null);
 
   const [newName, setNewName] = useState('');
   const [newPrice, setNewPrice] = useState('');
@@ -93,6 +104,43 @@ export function TicketReviewPage() {
 
   const hasPrintedVariance =
     printedTotalDiff != null && printedTotalDiff > 0.01;
+
+  const canRescan = useMemo(() => {
+    if (!ticket || ticket.finalizedAt || ticket.shareCode) return false;
+    return RESCAN_SESSION.has(ticket.sessionStatus ?? 'DRAFT');
+  }, [ticket]);
+
+  async function handleRescanFile(file: File) {
+    if (!id) return;
+    const ok = await confirm({
+      title: 'Reescanear ticket',
+      message:
+        'Se reemplazarán los productos detectados y se perderán los cambios manuales en esta lista. ¿Continuar?',
+      confirmLabel: 'Reescanear',
+    });
+    if (!ok) return;
+
+    setReprocessing(true);
+    setRescanError(null);
+    try {
+      const prepared = await prepareTicketImageForUpload(file);
+      await ticketsApi.reprocess(id, prepared);
+      showSuccessToast('Ticket reescaneado.');
+      setStep('products');
+      await reload({ silent: true });
+    } catch (err) {
+      if (err instanceof Error && err.message === 'EMPTY_IMAGE') {
+        setRescanError(
+          'No se pudo leer la foto. Intenta de nuevo o elige una imagen de la galería.',
+        );
+        return;
+      }
+      const apiErr = err instanceof ApiClientError ? err : null;
+      setRescanError(getScanErrorMessage(apiErr?.code));
+    } finally {
+      setReprocessing(false);
+    }
+  }
 
   async function handleAddProduct(e: FormEvent) {
     e.preventDefault();
@@ -198,6 +246,8 @@ export function TicketReviewPage() {
 
   return (
     <div className="space-y-6">
+      <ScanProcessingOverlay active={reprocessing} />
+
       <PageHeader
         title="Revisar ticket"
         subtitle={
@@ -329,10 +379,24 @@ export function TicketReviewPage() {
             </div>
           </form>
 
+          {canRescan && (
+            <div className="card space-y-3 text-center">
+              <p className="text-sm text-foreground-muted dark:text-slate-400">
+                ¿Tu ticket no fue escaneado correctamente?
+              </p>
+              <TicketImageSourcePicker
+                idPrefix="review-rescan"
+                onFileSelected={(file) => void handleRescanFile(file)}
+                disabled={reprocessing || saving}
+              />
+              {rescanError && <Alert tone="error">{rescanError}</Alert>}
+            </div>
+          )}
+
           <button
             type="button"
             className="btn-primary w-full"
-            disabled={(ticket.products?.length ?? 0) < 1}
+            disabled={(ticket.products?.length ?? 0) < 1 || reprocessing}
             onClick={() => setStep('settings')}
           >
             Continuar

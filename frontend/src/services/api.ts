@@ -202,6 +202,21 @@ export const ticketsApi = {
     }
   },
 
+  async reprocess(ticketId: string, image: File): Promise<ProcessTicketResult> {
+    try {
+      const form = new FormData();
+      form.append('image', image);
+      const { data } = await api.post<ApiSuccess<ProcessTicketResult>>(
+        `/tickets/${ticketId}/reprocess`,
+        form,
+        { timeout: PIPELINE_TIMEOUT_MS },
+      );
+      return unwrap(data);
+    } catch (err) {
+      return toClientError(err);
+    }
+  },
+
   async get(id: string): Promise<Ticket> {
     try {
       const { data } = await api.get<ApiSuccess<Ticket>>(`/tickets/${id}`);

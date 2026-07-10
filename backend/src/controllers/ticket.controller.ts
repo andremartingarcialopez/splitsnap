@@ -85,6 +85,32 @@ export class TicketController {
     }
   }
 
+  async reprocess(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const file = req.file;
+      if (!file) {
+        throw new AppError('image file is required (field: image)', 'VALIDATION_ERROR', 400);
+      }
+
+      const result = await ticketService.reprocessImage(req.params.id, {
+        buffer: file.buffer,
+        mimeType: file.mimetype,
+        originalName: file.originalname,
+      });
+
+      sendSuccess(
+        res,
+        {
+          ...result,
+          pipeline: { mock: env.useMockPipeline },
+        },
+        'Ticket reescaneado correctamente.',
+      );
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const ticket = await ticketService.getById(req.params.id);
