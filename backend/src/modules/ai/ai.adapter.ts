@@ -5,6 +5,7 @@ import { logAdapterError } from '../../middleware/errorLogger';
 import { CircuitBreaker, withBackoff } from '../../utils/circuitBreaker';
 import type { ParsedTicket, TicketParserPort } from './ai.port';
 import { auditParsedTicket } from './ai.validator';
+import { buildStructuredOcrForAi } from '../ocr/ticketLineParser';
 import { SYSTEM_PROMPT } from './ai.prompt';
 
 const geminiBreaker = new CircuitBreaker({ name: 'gemini' });
@@ -76,8 +77,13 @@ export class GeminiAdapter implements TicketParserPort {
     const timer = setTimeout(() => controller.abort(), aiConfig.timeoutMs);
 
     try {
+      const structuredText = buildStructuredOcrForAi(cleanText);
       const result = await model.generateContent(
-        { contents: [{ role: 'user', parts: [{ text: `TEXTO OCR:\n${cleanText}` }] }] },
+        {
+          contents: [
+            { role: 'user', parts: [{ text: `TEXTO OCR:\n${structuredText}` }] },
+          ],
+        },
         { signal: controller.signal },
       );
 

@@ -39,7 +39,9 @@ export class OcrSpaceAdapter implements OcrPort {
     const form = new FormData();
     form.append('language', ocrConfig.language);
     form.append('isOverlayRequired', 'false');
-    form.append('OCREngine', '2');
+    form.append('OCREngine', '3');
+    form.append('isTable', 'true');
+    form.append('scale', 'true');
     form.append(
       'file',
       new Blob([new Uint8Array(image.buffer)], { type: image.mimeType }),
