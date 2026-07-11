@@ -1,36 +1,13 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { aiConfig } from '../../config/ai';
 import { AppError } from '../../utils/AppError';
 import { logAdapterError } from '../../middleware/errorLogger';
 import { CircuitBreaker, withBackoff } from '../../utils/circuitBreaker';
 import type { ParsedTicket, TicketParserPort } from './ai.port';
 import { auditParsedTicket } from './ai.validator';
+import { SYSTEM_PROMPT } from './ai.prompt';
 
-const openRouterBreaker = new CircuitBreaker({ name: 'openrouter' });
 const geminiBreaker = new CircuitBreaker({ name: 'gemini' });
-
-const SYSTEM_PROMPT = `Eres un extractor de tickets de restaurante en México. Devuelve SOLO JSON válido con esta forma:
-{
-  "restaurantName": string|null,
-  "items": [{
-    "name": string,
-    "unitPrice": number,
-    "quantity": number,
-    "indivisible": boolean,
-    "confidenceScore": number|null
-  }],
-  "subtotal": number|null,
-  "tax": number|null,
-  "discount": number|null,
-  "total": number|null
-}
-Reglas:
-- Corrige nombres ilegibles del OCR (ej. HMBRG BBQ → Hamburguesa BBQ)
-- quantity: unidades de esa línea (default 1). Si el ticket dice "3 Cervezas $300", usa quantity=3 y unitPrice=300 (precio total de la línea)
-- indivisible=true solo para combos/paquetes que NO deben separarse (ej. Combo Familiar)
-- No inventes productos que no estén en el texto
-- Usa punto decimal (ej. 199.00)
-- Si hay propina en el ticket, inclúyela en el total pero NO como item
-- subtotal = suma de líneas antes de impuestos cuando el ticket lo indique`;
 
 function isRetryable(err: unknown): boolean {
   if (err instanceof AppError) {
@@ -59,108 +36,12 @@ function extractJson(text: string): unknown {
   }
 }
 
-function openRouterHeaders(): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${aiConfig.openRouterApiKey}`,
-    'HTTP-Referer': aiConfig.httpReferer,
-    'X-Title': aiConfig.appTitle,
-  };
+function geminiErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return 'Gemini request failed';
 }
 
-/**
- * OpenRouter adapter — chat completions (OpenAI-compatible).
- */
-export class OpenRouterAdapter implements TicketParserPort {
-  async parseTicket(cleanText: string): Promise<ParsedTicket> {
-    return openRouterBreaker.exec(() =>
-      withBackoff(() => this.callOnce(cleanText), {
-        retries: 3,
-        shouldRetry: isRetryable,
-      }),
-    );
-  }
-
-  private async callOnce(cleanText: string): Promise<ParsedTicket> {
-    if (!aiConfig.openRouterApiKey) {
-      throw new AppError(
-        'OPENROUTER_API_KEY is not configured',
-        'EXTERNAL_SERVICE_UNAVAILABLE',
-        503,
-      );
-    }
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), aiConfig.timeoutMs);
-
-    try {
-      const res = await fetch(aiConfig.openRouterEndpoint, {
-        method: 'POST',
-        headers: openRouterHeaders(),
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: aiConfig.model,
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: `TEXTO OCR:\n${cleanText}` },
-          ],
-          temperature: 0.1,
-          max_tokens: aiConfig.maxTokens,
-          response_format: { type: 'json_object' },
-        }),
-      });
-
-      if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        throw new AppError(
-          `OpenRouter HTTP ${res.status}${body ? `: ${body.slice(0, 200)}` : ''}`,
-          res.status >= 500 ? 'AI_PARSE_ERROR' : 'VALIDATION_ERROR',
-          502,
-        );
-      }
-
-      const json = (await res.json()) as {
-        choices?: Array<{ message?: { content?: string } }>;
-        error?: { message?: string };
-      };
-
-      if (json.error?.message) {
-        throw new AppError(json.error.message, 'AI_PARSE_ERROR', 502);
-      }
-
-      const text = json.choices?.[0]?.message?.content;
-      if (!text) {
-        throw new AppError('OpenRouter returned empty content', 'AI_PARSE_ERROR', 422);
-      }
-
-      const parsed = extractJson(text);
-      return auditParsedTicket(parsed);
-    } catch (err) {
-      if (!(err instanceof AppError)) {
-        logAdapterError(err, { adapter: 'openrouter', operation: 'parseTicket' });
-      }
-      if (err instanceof AppError) throw err;
-      if (err instanceof Error && err.name === 'AbortError') {
-        throw new AppError(
-          `OpenRouter timed out after ${aiConfig.timeoutMs / 1000}s`,
-          'AI_PARSE_ERROR',
-          504,
-        );
-      }
-      throw new AppError(
-        err instanceof Error ? err.message : 'OpenRouter request failed',
-        'AI_PARSE_ERROR',
-        502,
-      );
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-}
-
-/**
- * Gemini 2.5 Flash adapter (legacy direct API) — MDD §4.B
- */
+/** Gemini — API oficial Google (generativelanguage.googleapis.com). */
 export class GeminiAdapter implements TicketParserPort {
   async parseTicket(cleanText: string): Promise<ParsedTicket> {
     return geminiBreaker.exec(() =>
@@ -180,42 +61,27 @@ export class GeminiAdapter implements TicketParserPort {
       );
     }
 
-    const url = `${aiConfig.geminiEndpoint}?key=${encodeURIComponent(aiConfig.geminiApiKey)}`;
+    const client = new GoogleGenerativeAI(aiConfig.geminiApiKey);
+    const model = client.getGenerativeModel({
+      model: aiConfig.geminiModel,
+      systemInstruction: SYSTEM_PROMPT,
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: 'application/json',
+        maxOutputTokens: aiConfig.maxOutputTokens,
+      },
+    });
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), aiConfig.timeoutMs);
 
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `${SYSTEM_PROMPT}\n\nTEXTO OCR:\n${cleanText}` }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: 'application/json',
-          },
-        }),
-      });
+      const result = await model.generateContent(
+        { contents: [{ role: 'user', parts: [{ text: `TEXTO OCR:\n${cleanText}` }] }] },
+        { signal: controller.signal },
+      );
 
-      if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        throw new AppError(
-          `Gemini HTTP ${res.status}${body ? `: ${body.slice(0, 200)}` : ''}`,
-          res.status >= 500 ? 'AI_PARSE_ERROR' : 'VALIDATION_ERROR',
-          502,
-        );
-      }
-
-      const json = (await res.json()) as {
-        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-      };
-      const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+      const text = result.response.text();
       if (!text) {
         throw new AppError('Gemini returned empty content', 'AI_PARSE_ERROR', 422);
       }
@@ -234,11 +100,7 @@ export class GeminiAdapter implements TicketParserPort {
           504,
         );
       }
-      throw new AppError(
-        err instanceof Error ? err.message : 'Gemini request failed',
-        'AI_PARSE_ERROR',
-        502,
-      );
+      throw new AppError(geminiErrorMessage(err), 'AI_PARSE_ERROR', 502);
     } finally {
       clearTimeout(timer);
     }

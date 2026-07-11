@@ -1,9 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import type { ParsedTicket, ParsedTicketItem } from '../ocr/ocr.port';
+import { enrichQuantitiesFromOcr } from './enrichQuantitiesFromOcr';
 
 export type RawParsedItem = ParsedTicketItem & {
   quantity?: number;
   indivisible?: boolean;
+};
+
+export type NormalizeParsedTicketOptions = {
+  ocrText?: string;
 };
 
 export type NormalizedProductLine = {
@@ -69,10 +74,16 @@ export function normalizeParsedItems(items: RawParsedItem[]): NormalizedProductL
 }
 
 /** Aplica normalización al ticket parseado por IA (subtotal coherente con ítems explotados). */
-export function normalizeParsedTicket(parsed: ParsedTicket & { items: RawParsedItem[] }): ParsedTicket & {
+export function normalizeParsedTicket(
+  parsed: ParsedTicket & { items: RawParsedItem[] },
+  options?: NormalizeParsedTicketOptions,
+): ParsedTicket & {
   normalizedProducts: NormalizedProductLine[];
 } {
-  const normalizedProducts = normalizeParsedItems(parsed.items);
+  const enrichedItems = options?.ocrText
+    ? enrichQuantitiesFromOcr(parsed.items, options.ocrText)
+    : parsed.items;
+  const normalizedProducts = normalizeParsedItems(enrichedItems);
   if (!normalizedProducts.length) {
     return { ...parsed, items: [], normalizedProducts: [] };
   }

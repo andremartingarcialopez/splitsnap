@@ -19,7 +19,7 @@ export type HealthReport = {
   services: {
     database: ServiceHealth;
     ocr: ServiceHealth;
-    /** Parser IA (OpenRouter o Gemini legacy). */
+    /** Parser IA (Gemini). */
     ai: ServiceHealth;
     /** @deprecated Alias de `ai` para compatibilidad. */
     gemini: ServiceHealth;
@@ -102,41 +102,6 @@ async function pingOcr(): Promise<ServiceHealth> {
 async function pingAi(): Promise<ServiceHealth> {
   if (env.useMockPipeline) {
     return { status: 'mock', latencyMs: 0 };
-  }
-
-  if (aiConfig.provider === 'openrouter') {
-    if (!aiConfig.openRouterApiKey) {
-      return { status: 'missing_key', message: 'OPENROUTER_API_KEY not configured' };
-    }
-
-    const start = Date.now();
-    try {
-      await withTimeout('openrouter', async () => {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
-        try {
-          const res = await fetch(aiConfig.openRouterModelsEndpoint, {
-            method: 'GET',
-            headers: {
-              Authorization: `Bearer ${aiConfig.openRouterApiKey}`,
-            },
-            signal: controller.signal,
-          });
-          if (!res.ok) {
-            throw new Error(`OpenRouter HTTP ${res.status}`);
-          }
-        } finally {
-          clearTimeout(timer);
-        }
-      });
-      return { status: 'up', latencyMs: Date.now() - start };
-    } catch (err) {
-      return {
-        status: 'down',
-        latencyMs: Date.now() - start,
-        message: err instanceof Error ? err.message : 'OpenRouter unreachable',
-      };
-    }
   }
 
   if (aiConfig.provider === 'gemini') {

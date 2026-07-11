@@ -1,15 +1,10 @@
 import { env } from '../../config/env';
-import {
-  GeminiAdapter,
-  MockAiAdapter,
-  OpenRouterAdapter,
-} from './ai.adapter';
+import { GeminiAdapter, MockAiAdapter } from './ai.adapter';
 import type { ParsedTicket, TicketParserPort } from './ai.port';
 import { AppError } from '../../utils/AppError';
 
 function createParser(): TicketParserPort {
   if (env.useMockPipeline) return new MockAiAdapter();
-  if (env.aiProvider === 'openrouter') return new OpenRouterAdapter();
   if (env.aiProvider === 'gemini') return new GeminiAdapter();
   return new MockAiAdapter();
 }

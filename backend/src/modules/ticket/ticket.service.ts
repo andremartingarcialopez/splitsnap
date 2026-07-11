@@ -161,7 +161,12 @@ const REPROCESS_SESSION_STATUSES = new Set<string>([
 type ScanPipelineResult = {
   ticket: Awaited<ReturnType<TicketService['getById']>>;
   products: Awaited<ReturnType<TicketService['getById']>>['products'];
-  pipeline: { mock: boolean };
+  pipeline: {
+    mock: boolean;
+    warnings?: string[];
+    confidence?: number | null;
+    parsingNotes?: string | null;
+  };
 };
 
 export class TicketService {
@@ -601,7 +606,7 @@ export class TicketService {
   ): Promise<ScanPipelineResult> {
     const { cleaned, text } = await ocrService.extractFromImage(image);
     const parsedRaw = await aiService.parseTicket(cleaned);
-    const parsed = normalizeParsedTicket(parsedRaw);
+    const parsed = normalizeParsedTicket(parsedRaw, { ocrText: cleaned });
 
     const restaurant = parsed.restaurantName?.trim() || null;
     const title = restaurant || 'Ticket digitalizado';
@@ -650,7 +655,12 @@ export class TicketService {
     return {
       ticket: full,
       products: full.products,
-      pipeline: { mock: false },
+      pipeline: {
+        mock: false,
+        ...(parsed.warnings?.length ? { warnings: parsed.warnings } : {}),
+        ...(parsed.confidence != null ? { confidence: parsed.confidence } : {}),
+        ...(parsed.parsingNotes ? { parsingNotes: parsed.parsingNotes } : {}),
+      },
     };
   }
 

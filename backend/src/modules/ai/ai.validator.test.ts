@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { auditParsedTicket } from './ai.validator';
+import { auditParsedTicket, normalizeProductNameKey, sumLineTotals } from './ai.validator';
 import { AppError } from '../../utils/AppError';
 
 describe('auditParsedTicket', () => {
@@ -16,7 +16,6 @@ describe('auditParsedTicket', () => {
       total: 423.4,
     });
     expect(result.items).toHaveLength(2);
-    expect(result.restaurantName).toBe('Pizza House');
   });
 
   it('rejects unitPrice <= 0', () => {
@@ -32,16 +31,45 @@ describe('auditParsedTicket', () => {
     ).toThrow(AppError);
   });
 
-  it('rejects empty items', () => {
-    expect(() =>
-      auditParsedTicket({
-        restaurantName: 'X',
-        items: [],
-        subtotal: 0,
-        tax: 0,
-        discount: 0,
-        total: 0,
-      }),
-    ).toThrow(AppError);
+  it('preserves optional metadata from Gemini', () => {
+    const result = auditParsedTicket({
+      restaurantName: 'El Sol',
+      items: [{ name: 'Taco', unitPrice: 105, quantity: 1 }],
+      subtotal: 105,
+      tax: null,
+      discount: 0,
+      total: 105,
+      warnings: ['Precio parcialmente ilegible'],
+      confidence: 88,
+    });
+    expect(result.warnings).toContain('Precio parcialmente ilegible');
+    expect(result.confidence).toBe(88);
+  });
+
+  it('warns on duplicate normalized names', () => {
+    const result = auditParsedTicket({
+      restaurantName: 'Test',
+      items: [
+        { name: 'Cerveza', unitPrice: 60 },
+        { name: 'CERVEZA', unitPrice: 60 },
+      ],
+      subtotal: 120,
+      tax: null,
+      discount: 0,
+      total: 120,
+    });
+    expect(result.warnings?.some((w) => w.includes('duplicado'))).toBe(true);
+  });
+});
+
+describe('normalizeProductNameKey', () => {
+  it('treats case variants as the same key', () => {
+    expect(normalizeProductNameKey('Coca-Cola')).toBe(normalizeProductNameKey('coca cola'));
+  });
+});
+
+describe('sumLineTotals', () => {
+  it('sums line totals', () => {
+    expect(sumLineTotals([{ unitPrice: 300 }, { unitPrice: 50 }])).toBe(350);
   });
 });

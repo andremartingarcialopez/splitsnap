@@ -23,6 +23,9 @@ export type ParsedTicket = {
   tax: number | null;
   discount: number | null;
   total: number | null;
+  warnings?: string[];
+  confidence?: number | null;
+  parsingNotes?: string | null;
 };
 
 export interface TicketParserPort {
