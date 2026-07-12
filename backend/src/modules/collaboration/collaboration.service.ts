@@ -125,6 +125,7 @@ function serializePublicTicket(ticket: TicketPublicPayload) {
     shareCode: ticket.shareCode,
     title: ticket.title,
     restaurantName: ticket.restaurantName,
+    ticketImageUrl: ticket.ticketImageUrl,
     sessionStatus: ticket.sessionStatus,
     processingStatus: ticket.processingStatus,
     subtotal: ticket.subtotal != null ? Number(ticket.subtotal) : null,

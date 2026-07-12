@@ -15,6 +15,7 @@ export {
   faPlus,
   faSun,
   faTrashCan,
+  faUpRightAndDownLeftFromCenter,
   faUser,
   faUtensils,
   faXmark,

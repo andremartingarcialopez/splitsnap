@@ -214,6 +214,7 @@ export type PublicTicket = {
   shareCode: string | null;
   title: string;
   restaurantName: string | null;
+  ticketImageUrl: string;
   sessionStatus: string;
   processingStatus: string;
   subtotal: number | null;

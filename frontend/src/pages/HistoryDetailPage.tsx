@@ -5,7 +5,7 @@ import { HistoryListSkeleton } from '../components/Skeleton';
 import { ShareSummaryActions } from '../components/ShareSummaryActions';
 import { ApiClientError, historyApi } from '../services/api';
 import type { HistoryDetail, Product, TicketParticipantLink } from '../types/domain';
-import { resolveMediaUrl } from '../utils/mediaUrl';
+import { TicketImagePreview } from '../components/TicketImagePreview';
 
 function money(n: number | null | undefined) {
   if (n == null) return '—';
@@ -88,22 +88,16 @@ export function HistoryDetailPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
-        <div className="card overflow-hidden p-0">
-          {ticket.ticketImageUrl.startsWith('/uploads') ? (
-            <img
-              src={resolveMediaUrl(ticket.ticketImageUrl)}
-              alt="Ticket"
-              className="h-full max-h-72 w-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="flex h-40 items-center justify-center bg-neutral text-sm text-muted">
-              Sin imagen
-            </div>
-          )}
-        </div>
+        {ticket.ticketImageUrl.startsWith('/uploads') ? (
+          <TicketImagePreview
+            imageUrl={ticket.ticketImageUrl}
+            imageClassName="h-full max-h-72 w-full object-cover object-top"
+          />
+        ) : (
+          <div className="card flex h-40 items-center justify-center bg-neutral text-sm text-muted">
+            Sin imagen
+          </div>
+        )}
 
         <div className="card grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
           <div>

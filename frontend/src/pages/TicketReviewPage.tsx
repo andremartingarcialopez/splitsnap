@@ -13,6 +13,7 @@ import {
   ProductScrollIndex,
 } from '../components/ProductScrollIndex';
 import { ScanProcessingOverlay } from '../components/ScanProcessingOverlay';
+import { TicketImagePreview } from '../components/TicketImagePreview';
 import { TicketImageSourcePicker } from '../components/TicketImageSourcePicker';
 import { AVATAR_GALLERY } from '../constants/avatars';
 import { useConfirm } from '../context/ConfirmContext';
@@ -310,6 +311,8 @@ export function TicketReviewPage() {
       </div>
 
       {actionError && <Alert tone="error">{actionError}</Alert>}
+
+      <TicketImagePreview imageUrl={ticket.ticketImageUrl} />
 
       {step === 'products' && (
         <>

@@ -16,6 +16,7 @@ import {
   ProductScrollIndex,
 } from '../components/ProductScrollIndex';
 import { PublicTicketLayout } from '../components/PublicTicketLayout';
+import { TicketImagePreview } from '../components/TicketImagePreview';
 import { AVATAR_GALLERY } from '../constants/avatars';
 import { useTicketRealtime } from '../hooks/useTicketRealtime';
 import { ApiClientError, publicApi } from '../services/publicApi';
@@ -324,6 +325,8 @@ export function PublicTicketPage() {
                 El administrador reabrió el ticket. Puedes modificar tu selección.
               </Alert>
             )}
+
+            <TicketImagePreview imageUrl={ticket.ticketImageUrl} />
 
             <ProductScrollIndex items={productScrollItems} bottomInset={96} />
 

@@ -21,7 +21,7 @@ import {
 import type { Group, Participant, Product, Ticket } from '../types/domain';
 import { useConfirm } from '../context/ConfirmContext';
 import { showSuccessToast } from '../utils/toast';
-import { resolveMediaUrl } from '../utils/mediaUrl';
+import { TicketImagePreview } from '../components/TicketImagePreview';
 
 function money(n: number | null | undefined) {
   if (n == null) return '—';
@@ -346,22 +346,16 @@ export function TicketDetailPage() {
       {error && <Alert tone="error">{error}</Alert>}
 
       <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
-        <div className="card overflow-hidden p-0">
-          {ticket.ticketImageUrl.startsWith('/uploads') ? (
-            <img
-              src={resolveMediaUrl(ticket.ticketImageUrl)}
-              alt="Ticket"
-              className="h-full max-h-72 w-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="flex h-40 items-center justify-center bg-surface-muted text-sm text-foreground-muted dark:bg-slate-800 dark:text-slate-500">
-              Sin imagen
-            </div>
-          )}
-        </div>
+        {ticket.ticketImageUrl.startsWith('/uploads') ? (
+          <TicketImagePreview
+            imageUrl={ticket.ticketImageUrl}
+            imageClassName="h-full max-h-72 w-full object-cover object-top"
+          />
+        ) : (
+          <div className="card flex h-40 items-center justify-center bg-surface-muted text-sm text-foreground-muted dark:bg-slate-800 dark:text-slate-500">
+            Sin imagen
+          </div>
+        )}
 
         <div className="card grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
           <div className="stat-card">
