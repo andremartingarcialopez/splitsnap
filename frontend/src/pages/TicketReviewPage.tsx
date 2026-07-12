@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AdminProductSelectCard } from '../components/AdminProductSelectCard';
 import { Alert } from '../components/Alert';
@@ -17,11 +17,16 @@ import { TicketImagePreview } from '../components/TicketImagePreview';
 import { TicketImageSourcePicker } from '../components/TicketImageSourcePicker';
 import { AVATAR_GALLERY } from '../constants/avatars';
 import { useConfirm } from '../context/ConfirmContext';
+import { useNavigationGuard } from '../context/NavigationGuardContext';
 import { useTicket } from '../hooks/useTicket';
 import { ApiClientError, assignmentsApi, ticketsApi } from '../services/api';
 import type { Product } from '../types/domain';
 import { prepareTicketImageForUpload } from '../utils/compressTicketImage';
 import { formatMoney } from '../utils/money';
+import {
+  isAbandonableTicket,
+  isFailedAbandonableTicket,
+} from '../utils/preDivisionTicket';
 import { getScanErrorMessage } from '../utils/scanErrorMessage';
 import { sortProductsByName } from '../utils/sortProductsByName';
 import { unitPriceForSplit } from '../utils/splitProductLine';
@@ -43,12 +48,14 @@ export function TicketReviewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { confirm } = useConfirm();
+  const { setGuard } = useNavigationGuard();
   const { ticket, status, error, reload } = useTicket(id);
   const [step, setStep] = useState<WizardStep>('products');
   const [saving, setSaving] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [rescanError, setRescanError] = useState<string | null>(null);
+  const skippingGuardRef = useRef(false);
 
   const [newName, setNewName] = useState('');
   const [newPrice, setNewPrice] = useState('');
@@ -57,9 +64,65 @@ export function TicketReviewPage() {
   const [adminName, setAdminName] = useState('');
   const [avatarId, setAvatarId] = useState(AVATAR_GALLERY[0]?.id ?? 'bear');
 
+  const canAbandon = isAbandonableTicket(ticket);
+  const isFailedDraft = isFailedAbandonableTicket(ticket);
+
+  const confirmAbandonAndDelete = useCallback(async (): Promise<boolean> => {
+    if (!id || !ticket || !isAbandonableTicket(ticket)) return true;
+
+    const ok = await confirm({
+      title: isFailedAbandonableTicket(ticket) ? 'Descartar ticket' : 'Abandonar ticket',
+      message: isFailedAbandonableTicket(ticket)
+        ? '¿Seguro que quieres descartar este ticket fallido? Se eliminará de la base de datos.'
+        : '¿Seguro que quieres abandonar el proceso del ticket actual? Se eliminará y no podrás recuperarlo.',
+      confirmLabel: isFailedAbandonableTicket(ticket) ? 'Descartar' : 'Abandonar',
+      tone: 'danger',
+    });
+    if (!ok) return false;
+
+    try {
+      await ticketsApi.remove(id);
+      skippingGuardRef.current = true;
+      setGuard(null);
+      showSuccessToast(
+        isFailedAbandonableTicket(ticket) ? 'Ticket descartado.' : 'Ticket abandonado.',
+      );
+      return true;
+    } catch (err) {
+      setActionError(err instanceof ApiClientError ? err.message : 'No se pudo eliminar el ticket.');
+      return false;
+    }
+  }, [confirm, id, setGuard, ticket]);
+
+  useEffect(() => {
+    if (!canAbandon || !id) {
+      setGuard(null);
+      return;
+    }
+
+    setGuard(async () => {
+      if (skippingGuardRef.current) return true;
+      return confirmAbandonAndDelete();
+    });
+
+    return () => setGuard(null);
+  }, [canAbandon, confirmAbandonAndDelete, id, setGuard]);
+
+  useEffect(() => {
+    if (!canAbandon) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [canAbandon]);
+
   useEffect(() => {
     if (!ticket) return;
     if (ticket.shareCode && POST_DIVISION.has(ticket.sessionStatus ?? '')) {
+      skippingGuardRef.current = true;
+      setGuard(null);
       navigate(`/tickets/${ticket.id}/share`, { replace: true });
       return;
     }
@@ -72,7 +135,12 @@ export function TicketReviewPage() {
       setAdminName(admin.displayName ?? admin.participant.name ?? '');
       if (admin.avatarId) setAvatarId(admin.avatarId);
     }
-  }, [ticket, navigate]);
+  }, [ticket, navigate, setGuard]);
+
+  async function handleAbandonClick() {
+    const deleted = await confirmAbandonAndDelete();
+    if (deleted) navigate('/', { replace: true });
+  }
 
   const adminParticipant = useMemo(
     () => ticket?.participants?.find((p) => p.isAdmin),
@@ -213,6 +281,8 @@ export function TicketReviewPage() {
         expectedParticipantCount: expectedCount ? Number(expectedCount) : undefined,
       });
       showSuccessToast('División iniciada');
+      skippingGuardRef.current = true;
+      setGuard(null);
       navigate(`/tickets/${id}/share`);
     } catch (err) {
       setActionError(err instanceof ApiClientError ? err.message : 'No se pudo iniciar.');
@@ -295,6 +365,24 @@ export function TicketReviewPage() {
           new Date(ticket.createdAt).toLocaleDateString('es-MX')
         }
       />
+
+      {isFailedDraft && (
+        <Alert tone="error">
+          El escaneo falló
+          {ticket.failureReason ? `: ${ticket.failureReason}` : '.'} Puedes corregir
+          productos a mano o descartar el ticket.
+          <div className="mt-3">
+            <button
+              type="button"
+              className="btn-glass-danger"
+              disabled={saving || reprocessing}
+              onClick={() => void handleAbandonClick()}
+            >
+              Descartar ticket
+            </button>
+          </div>
+        </Alert>
+      )}
 
       <div className="flex gap-2">
         {(['products', 'settings', 'selection'] as WizardStep[]).map((s, idx) => (
@@ -449,6 +537,17 @@ export function TicketReviewPage() {
           >
             Continuar
           </button>
+
+          {canAbandon && (
+            <button
+              type="button"
+              className="btn-glass-danger w-full"
+              disabled={saving || reprocessing}
+              onClick={() => void handleAbandonClick()}
+            >
+              {isFailedDraft ? 'Descartar ticket' : 'Abandonar ticket'}
+            </button>
+          )}
         </>
       )}
 
@@ -512,6 +611,16 @@ export function TicketReviewPage() {
               {saving ? 'Guardando…' : 'Continuar'}
             </button>
           </div>
+          {canAbandon && (
+            <button
+              type="button"
+              className="btn-glass-danger w-full"
+              disabled={saving || reprocessing}
+              onClick={() => void handleAbandonClick()}
+            >
+              {isFailedDraft ? 'Descartar ticket' : 'Abandonar ticket'}
+            </button>
+          )}
         </>
       )}
 
@@ -552,6 +661,16 @@ export function TicketReviewPage() {
               {saving ? 'Iniciando…' : 'Iniciar división'}
             </button>
           </div>
+          {canAbandon && (
+            <button
+              type="button"
+              className="btn-glass-danger w-full"
+              disabled={saving || reprocessing}
+              onClick={() => void handleAbandonClick()}
+            >
+              {isFailedDraft ? 'Descartar ticket' : 'Abandonar ticket'}
+            </button>
+          )}
         </>
       )}
     </div>

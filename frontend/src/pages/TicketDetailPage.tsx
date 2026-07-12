@@ -22,6 +22,7 @@ import type { Group, Participant, Product, Ticket } from '../types/domain';
 import { useConfirm } from '../context/ConfirmContext';
 import { showSuccessToast } from '../utils/toast';
 import { TicketImagePreview } from '../components/TicketImagePreview';
+import { isFailedAbandonableTicket } from '../utils/preDivisionTicket';
 
 function money(n: number | null | undefined) {
   if (n == null) return '—';
@@ -255,15 +256,20 @@ export function TicketDetailPage() {
   async function deleteTicket() {
     if (!id || !ticket) return;
     const label = ticket.restaurantName || ticket.title;
+    const failedDraft = isFailedAbandonableTicket(ticket);
     const ok = await confirm({
-      title: 'Eliminar ticket',
-      message: `¿Eliminar el ticket «${label}» por completo?`,
+      title: failedDraft ? 'Descartar ticket' : 'Eliminar ticket',
+      message: failedDraft
+        ? `¿Descartar «${label}»? Se eliminará de la base de datos.`
+        : `¿Eliminar el ticket «${label}» por completo?`,
+      confirmLabel: failedDraft ? 'Descartar' : 'Eliminar',
       tone: 'danger',
     });
     if (!ok) return;
     try {
       await ticketsApi.remove(id);
-      navigate('/tickets');
+      showSuccessToast(failedDraft ? 'Ticket descartado.' : 'Ticket eliminado.');
+      navigate(failedDraft ? '/' : '/tickets');
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'No se pudo eliminar.');
     }
@@ -330,7 +336,7 @@ export function TicketDetailPage() {
             Listado
           </Link>
           <button type="button" className="btn-danger" onClick={() => void deleteTicket()}>
-            Eliminar ticket
+            {isFailedAbandonableTicket(ticket) ? 'Descartar ticket' : 'Eliminar ticket'}
           </button>
         </div>
       </div>

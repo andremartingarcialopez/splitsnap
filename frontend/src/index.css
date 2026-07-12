@@ -117,6 +117,61 @@
     background-color: rgb(153 27 27 / 0.52);
   }
 
+  /* Abandonar / descartar — glass rojo translúcido */
+  .btn-glass-danger {
+    @apply btn border font-semibold text-red-700 backdrop-blur-xl backdrop-saturate-150 active:scale-[0.98];
+    border-color: rgb(255 255 255 / 0.55);
+    background: linear-gradient(
+      145deg,
+      rgb(255 255 255 / 0.55) 0%,
+      rgb(254 226 226 / 0.48) 45%,
+      rgb(254 202 202 / 0.42) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.7),
+      inset 0 -1px 0 rgb(239 68 68 / 0.06),
+      0 8px 28px -10px rgb(239 68 68 / 0.28),
+      0 2px 8px -4px rgb(61 51 73 / 0.08);
+  }
+
+  .btn-glass-danger:hover:not(:disabled) {
+    border-color: rgb(252 165 165 / 0.65);
+    background: linear-gradient(
+      145deg,
+      rgb(255 255 255 / 0.62) 0%,
+      rgb(254 202 202 / 0.58) 50%,
+      rgb(252 165 165 / 0.45) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.8),
+      0 10px 32px -8px rgb(239 68 68 / 0.35);
+  }
+
+  html.dark .btn-glass-danger {
+    @apply text-red-200;
+    border-color: rgb(255 255 255 / 0.12);
+    background: linear-gradient(
+      145deg,
+      rgb(255 255 255 / 0.08) 0%,
+      rgb(127 29 29 / 0.42) 50%,
+      rgb(69 10 10 / 0.35) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 10px 32px -10px rgb(0 0 0 / 0.45),
+      0 0 24px -8px rgb(239 68 68 / 0.25);
+  }
+
+  html.dark .btn-glass-danger:hover:not(:disabled) {
+    border-color: rgb(248 113 113 / 0.35);
+    background: linear-gradient(
+      145deg,
+      rgb(255 255 255 / 0.1) 0%,
+      rgb(153 27 27 / 0.52) 50%,
+      rgb(127 29 29 / 0.45) 100%
+    );
+  }
+
   .btn-sm {
     @apply min-h-[36px] px-3 py-1.5 text-xs;
   }

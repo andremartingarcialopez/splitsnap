@@ -43,6 +43,16 @@ export function useTicketScanFlow() {
         }
 
         const apiErr = err instanceof ApiClientError ? err : null;
+        const details = apiErr?.details as
+          | { ticketId?: string; allowManualEntry?: boolean }
+          | null
+          | undefined;
+        // Ticket ya creado (pipeline falló): ir a revisión para editar o descartar.
+        if (details?.ticketId && details.allowManualEntry) {
+          navigate(`/tickets/${details.ticketId}/review`);
+          return false;
+        }
+
         setError(getScanErrorMessage(apiErr?.code));
         return false;
       } finally {

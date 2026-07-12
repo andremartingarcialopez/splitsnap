@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { AppIcon } from './AppIcon';
 import { ThemeToggle } from './ThemeToggle';
+import { useNavigationGuard } from '../context/NavigationGuardContext';
 import { faClock, faHouse, faPlus, faUtensils } from '../icons';
 
 type NavItem = {
@@ -30,11 +31,21 @@ const navItems: NavItem[] = [
   },
 ];
 
+function useGuardedClick(to: string) {
+  const { tryNavigate } = useNavigationGuard();
+  return (e: MouseEvent) => {
+    e.preventDefault();
+    void tryNavigate(to);
+  };
+}
+
 function NavItemLink({ item }: { item: NavItem }) {
+  const onClick = useGuardedClick(item.to);
   return (
     <NavLink
       to={item.to}
       end={item.end}
+      onClick={onClick}
       className={({ isActive }) => (isActive ? 'nav-item-active' : 'nav-item-inactive')}
     >
       {item.icon}
@@ -44,11 +55,14 @@ function NavItemLink({ item }: { item: NavItem }) {
 }
 
 function BrandHomeLink({ variant = 'mobile' }: { variant?: 'mobile' | 'desktop' }) {
+  const onClick = useGuardedClick('/');
+
   if (variant === 'desktop') {
     return (
       <NavLink
         to="/"
         end
+        onClick={onClick}
         className="flex min-w-0 flex-1 items-center gap-3 rounded-xl transition hover:opacity-80"
         aria-label="Ir al inicio"
       >
@@ -67,6 +81,7 @@ function BrandHomeLink({ variant = 'mobile' }: { variant?: 'mobile' | 'desktop' 
     <NavLink
       to="/"
       end
+      onClick={onClick}
       className="flex items-center gap-2.5 rounded-xl transition hover:opacity-80"
       aria-label="Ir al inicio"
     >
@@ -79,6 +94,8 @@ function BrandHomeLink({ variant = 'mobile' }: { variant?: 'mobile' | 'desktop' 
 }
 
 export function AppLayout() {
+  const { tryNavigate } = useNavigationGuard();
+
   return (
     <div className="min-h-screen lg:flex">
       {/* Sidebar — desktop */}
@@ -128,6 +145,10 @@ export function AppLayout() {
                 key={item.to}
                 to={item.to}
                 end={item.end}
+                onClick={(e) => {
+                  e.preventDefault();
+                  void tryNavigate(item.to);
+                }}
                 className={({ isActive }) =>
                   [
                     'touch-target flex flex-col items-center gap-0.5 rounded-2xl px-3 py-1.5 text-[10px] font-medium transition',

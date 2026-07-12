@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AppToaster } from './components/AppToaster';
 import { ConfirmProvider } from './context/ConfirmContext';
+import { NavigationGuardProvider } from './context/NavigationGuardContext';
 import { ThemeProvider } from './context/ThemeContext';
 import 'react-toastify/dist/ReactToastify.css';
 import './styles/globals.css';
@@ -17,8 +18,10 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider>
       <ConfirmProvider>
         <BrowserRouter>
-          <App />
-          <AppToaster />
+          <NavigationGuardProvider>
+            <App />
+            <AppToaster />
+          </NavigationGuardProvider>
         </BrowserRouter>
       </ConfirmProvider>
     </ThemeProvider>
