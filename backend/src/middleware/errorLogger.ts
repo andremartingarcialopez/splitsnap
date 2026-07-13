@@ -5,7 +5,7 @@ const KEY_PATTERNS = [
 ];
 
 export type AdapterErrorMeta = {
-  adapter: 'ocr' | 'gemini' | string;
+  adapter: 'ocr' | 'openrouter' | 'gemini' | string;
   operation?: string;
   statusCode?: number;
   code?: string;

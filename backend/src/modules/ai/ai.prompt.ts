@@ -1,5 +1,5 @@
 /**
- * Instrucciones del parser inteligente — capa Gemini (OCR.Space → Gemini → JSON).
+ * Instrucciones del parser inteligente — capa IA (OCR.Space → OpenRouter → JSON).
  */
 export const SYSTEM_PROMPT = `Eres un asistente experto en tickets de restaurante en México. Tu trabajo NO es solo convertir texto a JSON: debes limpiar, validar y normalizar la información del OCR antes de responder.
 

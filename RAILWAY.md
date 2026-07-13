@@ -62,10 +62,12 @@ git push -u origin main
 | `STORAGE_DIR` | `/data/uploads` |
 | `PIPELINE_MOCK` | `false` |
 | `OCR_SPACE_API_KEY` | tu clave |
-| `OPENROUTER_API_KEY` | tu clave |
-| `OPENROUTER_MODEL` | `google/gemini-2.5-flash` |
+| `OPENROUTER_API_KEY` | tu clave de [openrouter.ai/keys](https://openrouter.ai/keys) |
+| `OPENROUTER_MODEL` | `google/gemini-2.5-flash` (u otro modelo OpenRouter) |
 | `OPENROUTER_HTTP_REFERER` | URL pública del frontend |
 | `MAX_UPLOAD_MB` | `5` |
+
+> Quita `GEMINI_API_KEY` / `GEMINI_MODEL` si existían: el parser IA usa solo OpenRouter.
 
 5. **Volume** (importante para fotos):
    - Servicio backend → **Settings** → **Volumes** → **Add Volume**

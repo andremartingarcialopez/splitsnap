@@ -10,8 +10,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   OCR_SPACE_API_KEY: z.string().optional().default(''),
-  GEMINI_API_KEY: z.string().optional().default(''),
-  GEMINI_MODEL: z.string().optional().default('gemini-3.5-flash'),
+  OPENROUTER_API_KEY: z.string().optional().default(''),
+  OPENROUTER_MODEL: z.string().optional().default('google/gemini-2.5-flash'),
+  OPENROUTER_HTTP_REFERER: z.string().optional().default('http://localhost:5173'),
   PIPELINE_MOCK: z
     .string()
     .optional()
@@ -24,9 +25,9 @@ const envSchema = z.object({
 const parsed = envSchema.parse(process.env);
 
 const hasOcrKey = Boolean(parsed.OCR_SPACE_API_KEY);
-const hasGeminiKey = Boolean(parsed.GEMINI_API_KEY);
-const hasAiKey = hasGeminiKey;
-const aiProvider = hasGeminiKey ? ('gemini' as const) : ('none' as const);
+const hasOpenRouterKey = Boolean(parsed.OPENROUTER_API_KEY);
+const hasAiKey = hasOpenRouterKey;
+const aiProvider = hasOpenRouterKey ? ('openrouter' as const) : ('none' as const);
 
 const useMock =
   parsed.PIPELINE_MOCK ||
